@@ -233,6 +233,10 @@
 <script type="module" src="/webcomponents/sakai-permissions.js$!{portalCDNQuery}"></script>
 <script type="module" src="/webcomponents/sakai-search.js$!{portalCDNQuery}"></script>
 <script type="module" src="/webcomponents/sakai-maximise-button.js$!{portalCDNQuery}"></script>
+<script type="module" src="/webcomponents/calendar/sakai-calendar.js$!{portalCDNQuery}"></script>
+<script type="module" src="/webcomponents/tasks/sakai-tasks.js$!{portalCDNQuery}"></script>
+<script type="module" src="/webcomponents/grades/sakai-grades.js$!{portalCDNQuery}"></script>
+
 
 ##parse("/vm/morpheus/snippets/portalChat-snippet.vm")
 
