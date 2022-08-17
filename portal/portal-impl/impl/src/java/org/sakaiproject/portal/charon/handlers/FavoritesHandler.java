@@ -294,6 +294,7 @@ public class FavoritesHandler extends BasePortalHandler
 		}
 
 		public static UserFavorites fromJSON(String json) throws ParseException {
+			log.info("json: {}", json);
 			JSONParser parser = new JSONParser();
 
 			JSONObject obj = (JSONObject)parser.parse(json);

@@ -8,8 +8,11 @@
         #set ($loggedInClass = "is-logged-out")
     #end
 
-    #if (${toolsCollapsed})
-        #set ($toolsCollapsedClass = "${portalCssPrefix}-toolMenu-collapsed")
+    #if (${sidebarCollapsed})
+        #set ($sidebarCollapsedClass = "sidebar-collapsed")
+        #set ($sidebarCollapseBtnTitle = $rloader.mainnav_btn_sidebar_expand)
+    #else
+        #set ($sidebarCollapseBtnTitle = $rloader.mainnav_btn_sidebar_collapse)
     #end
 
 
@@ -30,7 +33,7 @@
             #set ($roleSwitchClass = "swapped-view")
         #end
 
-        <div class="Mrphs-portalWrapper vh-100 ${portalCssPrefix}-container $!{roleSwitchClass}">
+        <div class="Mrphs-portalWrapper vh-100 ${portalCssPrefix}-container $!{roleSwitchClass} $!{sidebarCollapsedClass}">
             <div class="${portalCssPrefix}-pasystem"></div>
             ## Skip Nav (a11y links)
             #parse("/vm/morpheus/snippets/skipNav-snippet.vm")

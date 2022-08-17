@@ -84,13 +84,7 @@ $success: #7952b3;
 // Utilities
 @import "bootstrap/scss/utilities/api";
 
-
-//Bootstrap icons
-@import "bootstrap-icons/font/bootstrap-icons";
-
-//Fontawsome icons
-$fa-font-path: "./fonts";
-@import "font-awesome/scss/font-awesome";
+@import "base/icons";
 
 //Tools
 @import "modules/tool/portal";
@@ -100,7 +94,6 @@ $fa-font-path: "./fonts";
 //
 
 @import "icon-list";
-
 
 //
 // Custom styles that need to be relocated

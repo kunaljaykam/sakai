@@ -67,42 +67,81 @@
         });
     })();
 
-    //Setup header login password field
+    //Setup lessons subpage navigaion
+
+    //Macros to add Lessons data to an js array
+    #macro (addLessonsSubnavData $arrayName $site)
+        #if ($site && $site.lessonsSubPages)
+            ${arrayName}.push(${site.lessonsSubPages})
+        #end
+    #end
+
+    #macro (addLessonsSubnavDataList $arrayName $siteList)
+        #if ($siteList)
+            #foreach ($site in $siteList)
+                #addLessonsSubnavData ($arrayName, $site)
+            #end
+        #end
+    #end
+
     (() => {
-        const loginInputGroup = portal.head.querySelector(".password-field"); 
-        const mobileLogin = new PasswordField(loginInputGroup, {
-            icons: {
-                hidden: "bi-eye-slash-fill",
-                shown:"bi-eye-fill",
-                capsLock: "bi-capslock-fill"
-            }
+        let lessonSubnavArray = new Array();
+
+        #addLessonsSubnavData("lessonSubnavArray", $superSites.currentSite);
+        #addLessonsSubnavDataList("lessonSubnavArray", $superSites.pinnedSites);
+        #addLessonsSubnavDataList("lessonSubnavArray", $superSites.recentSites);
+        
+        //Remove duplicate pages e.g. page in current and pinned
+        lessonSubnavArray = lessonSubnavArray.filter((value, index, currentArray) => {
+            return lessonSubnavArray.findIndex(val => val.siteId === value.siteId) === index;
+        });
+
+        //Create LessonsSubPageNavigation instance for each site
+        lessonSubnavArray.forEach(lessonSubnavData => {
+            new LessonsSubPageNavigation(lessonSubnavData);
         });
     })();
 
-    //Setup mobile login
-    (() => {
-        const mobileLoginConfig = {
-            passwordField: {
+    #if (!$loggedIn)
+    //--start-logged-out-scripts
+        //Setup header login password field
+        (() => {
+            const loginInputGroup = portal.head.querySelector(".password-field"); 
+            const mobileLogin = new PasswordField(loginInputGroup, {
                 icons: {
                     hidden: "bi-eye-slash-fill",
                     shown:"bi-eye-fill",
                     capsLock: "bi-capslock-fill"
                 }
-            }
-        };
-        const mobileLoginBtn = portal.head.querySelector("#mobileLoginBtn"); 
-        const mobileLogin = new MobileLogin(mobileLoginBtn, mobileLoginConfig);
-    })();
+            });
+        })();
 
-    //Add an on-load listener to focus the password field
-    (() => {
-        window.addEventListener("load", () => {
-            //Check if window is above xs breakpoint
-            if (BreakpointManager.compare(portal.breakpointManager.currentBreakpoint, "xs") > 1) {
-                document.querySelector("#eid")?.focus()
-            }
-        });
-    })();
+        //Setup mobile login
+        (() => {
+            const mobileLoginConfig = {
+                passwordField: {
+                    icons: {
+                        hidden: "bi-eye-slash-fill",
+                        shown:"bi-eye-fill",
+                        capsLock: "bi-capslock-fill"
+                    }
+                }
+            };
+            const mobileLoginBtn = portal.head.querySelector("#mobileLoginBtn"); 
+            const mobileLogin = new MobileLogin(mobileLoginBtn, mobileLoginConfig);
+        })();
+
+        //Add an on-load listener to focus the password field
+        (() => {
+            window.addEventListener("load", () => {
+                //Check if window is above xs breakpoint
+                if (BreakpointManager.compare(portal.breakpointManager.currentBreakpoint, "xs") > 1) {
+                    document.querySelector("#eid")?.focus()
+                }
+            });
+        })();
+    //--end-logged-out-scripts
+    #end
 </script>
 <script>
     var needJQuery = true;

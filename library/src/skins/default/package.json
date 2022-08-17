@@ -2,7 +2,7 @@
   "name": "skin-default",
   "description": "Sakai Default Skin",
   "scripts": {
-    "build": "npm-run-all css-lint css-compile css-prefix",
+    "build": "npm-run-all css-compile css-prefix",
     "css-compile": "sass --style=expanded --load-path=node_modules src/sass:target",
     "css-watch": "sass --watch --style=expanded --load-path=node_modules src/sass:$npm_config_target",
     "css-lint": "stylelint src/sass/ --config config/.stylelintrc.json",

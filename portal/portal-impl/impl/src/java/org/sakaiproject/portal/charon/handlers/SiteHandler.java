@@ -690,6 +690,8 @@ public class SiteHandler extends WorksiteHandler
 				.getProperties(org.sakaiproject.user.api.PreferencesService.SITENAV_PREFS_KEY);
 			
 
+			rcontext.put("currentSiteId", siteId);
+			rcontext.put("superSites", portal.getSiteHelper().getContextSitesWithPages(req, siteId, null, null, loggedIn));
 			if (loggedIn) {
 				List<String> siteIds = resourceProperties.getPropertyList("order");
 
@@ -731,7 +733,7 @@ public class SiteHandler extends WorksiteHandler
                 siteMap.put("url", site.getUrl());
                 siteMap.put("type", site.getType());
                 siteMap.put("shortDescription", site.getShortDescription());
-                siteMap.put("isFavorite", true);
+                siteMap.put("isPinned", true);
                 List<Map<String, Object>> pageList = site.getOrderedPages().stream().map(page -> {
                     Map<String, Object> pageMap = new HashMap<>();
                     List<ToolConfiguration> toolList = page.getTools();
