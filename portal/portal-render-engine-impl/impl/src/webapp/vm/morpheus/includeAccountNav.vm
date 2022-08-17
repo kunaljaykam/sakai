@@ -21,7 +21,7 @@
   </li>
 #end
 
-#if ($quickLinks)
+#if ($userIsLoggedIn)
   <li class="d-none d-md-inline">
     <a class="sak-sysInd-quicklinks nav-link text-white position-relative" data-bs-toggle="offcanvas" href="#sakai-quickLinksPanel" role="button" aria-controls="sakai-quickLinksPanel">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16" role="img" data-bs-toggle="tooltip" data-bs-placement="bottom" title="${rloader.sit_quick_links}">
