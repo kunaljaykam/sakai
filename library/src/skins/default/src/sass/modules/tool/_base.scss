@@ -246,3 +246,7 @@
 .alertMessage{
 	@extend .bs-callout-danger;
 }
+
+.table-bordered {
+    border: 1px solid var(--sakai-border-color);
+}

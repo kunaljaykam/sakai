@@ -105,6 +105,8 @@ $input-border: var(--sakai-border-color);
 $page-header-border-color: lighten(#000, 46.7%) !default; // #eee
 $jumbotron-heading-font-size: $h4-font-size;
 
+@import "modules/tool/main";
+
 @import "modules/notifications/notifications";
 @import "modules/profile-popup/profile-popup";
 
@@ -163,6 +165,7 @@ $jumbotron-heading-font-size: $h4-font-size;
 @import "modules/tool/sakai-options-menu/sakai-options-menu";
 @import "modules/tool/reorderer/base";
 @import "modules/tool/theme-switcher/base";
+@import "modules/tool/grader/base";
 
 
 //
