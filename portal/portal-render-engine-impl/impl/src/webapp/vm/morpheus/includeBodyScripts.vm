@@ -189,7 +189,6 @@
             window.console && console.log('Portal adding jQuery migrate');
         }
         if ( typeof jQuery.fn.popover == 'undefined') {
-            document.write('\x3Cscript type="text/javascript" src="${pageWebjarsPath}bootstrap/5.2.0/js/bootstrap.min.js$!{portalCDNQuery}">'+'\x3C/script>')
             window.console && console.log('Portal adding Bootstrap');
         }
         if (typeof jQuery.ui == 'undefined') {
