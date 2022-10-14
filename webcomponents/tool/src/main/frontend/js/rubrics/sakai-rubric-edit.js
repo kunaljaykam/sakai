@@ -8,8 +8,14 @@ export class SakaiRubricEdit extends RubricsElement {
 
     super();
 
-    this.popoverOpen = "false";
     this.rubricClone = {};
+  }
+
+  static get properties() {
+
+    return {
+      rubric: { type: Object }
+    };
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -24,26 +30,66 @@ export class SakaiRubricEdit extends RubricsElement {
     }
   }
 
-  static get properties() {
+  firstUpdated() {
 
-    return {
-      rubric: { type: Object }
-    };
+    const trigger = this.querySelector('.edit');
+
+    this.popover = new bootstrap.Popover(trigger, {
+      content: this.querySelector(`#edit_rubric_${this.rubric.id}`),
+      html: true
+    });
+
+    // When shown, set focus to the title editor input
+    trigger.addEventListener("shown.bs.popover", () => {
+      document.getElementById(`rubric_title_edit_${this.rubric.id}`)?.focus();
+    });
+  }
+
+  _eatEvent(e) {
+    e.stopPropagation();
+  }
+
+  _editRubric(e) {
+    e.stopPropagation();
+  }
+
+  _cancelEdit(e) {
+
+    e.stopPropagation();
+    this.rubricClone.title = this.rubric.title;
+    document.getElementById(`rubric_title_edit_${this.rubric.id}`).value = this.rubric.title;
+    this.popover.hide();
+  }
+
+  _saveEdit(e) {
+
+    e.stopPropagation();
+    const title = document.getElementById(`rubric_title_edit_${this.rubric.id}`).value;
+    this.dispatchEvent(new CustomEvent("update-rubric-title", { detail: title }));
+    this.popover.hide();
   }
 
   render() {
 
     return html`
-      <a class="linkStyle edit fa fa-edit" role="button" aria-haspopup="true" aria-expanded="${this.popoverOpen}" aria-controls="edit_rubric_${this.rubric.id}" tabindex="0" @keyup="${this.openEditWithKeyboard}" @click="${this.editRubric}" title="${tr("edit_rubric")} ${this.rubric.title}" aria-label="${tr("edit_rubric")} ${this.rubric.title}" href="#"></a>
+      <button id="edit-rubric-button-${this.rubric.id}" class="linkStyle edit"
+          data-bs-toggle="popover"
+          @click="${this._editRubric}"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="edit_rubric_${this.rubric.id}"
+          title="${tr("edit_rubric")} ${this.rubric.title}"
+          aria-label="${tr("edit_rubric")} ${this.rubric.title}">
+        <i class="bi-pencil-fill pe-none"></i>
+      </button>
 
-      <div id="edit_rubric_${this.rubric.id}" @click="${this.eatEvent}" class="popover rubric-edit-popover bottom">
-        <div class="arrow"></div>
+      <div id="edit_rubric_${this.rubric.id}" @click="${this._eatEvent}">
         <div class="popover-title">
           <div class="buttons act">
-            <button class="active save" @click="${this.saveEdit}">
+            <button class="active save" @click="${this._saveEdit}">
               <sr-lang key="save">Save</sr-lang>
             </button>
-            <button class="btn btn-link btn-xs cancel" @click="${this.cancelEdit}">
+            <button class="btn btn-link btn-xs cancel" @click="${this._cancelEdit}">
               <sr-lang key="cancel">Cancel</sr-lang>
             </button>
           </div>
@@ -53,103 +99,11 @@ export class SakaiRubricEdit extends RubricsElement {
             <label for="rubric_title_edit">
               <sr-lang key="rubric_title">Rubric Title</sr-lang>
             </label>
-            <input title="${tr("rubric_title")}" id="rubric_title_edit" type="text" class="form-control" value="${this.rubricClone.title}" maxlength="255">
+            <input title="${tr("rubric_title")}" id="rubric_title_edit_${this.rubric.id}" type="text" class="form-control" value="${this.rubricClone.title}" maxlength="255">
           </div>
         </div>
       </div>
     `;
-  }
-
-  firstUpdated() {
-
-    $(this).find(".popover.rubric-edit-popover input").on('keydown', function(event) {
-      if (event.keyCode == 9) {
-        event.preventDefault();
-        $(this).parents('.popover.rubric-edit-popover').find('.save').focus();
-      }
-    });
-    $(this).find(".popover.rubric-edit-popover .save").on('keydown', function(event) {
-      if (event.keyCode == 9) {
-        event.preventDefault();
-        $(this).parents('.popover.rubric-edit-popover').find('.cancel').focus();
-      }
-    });
-    $(this).find(".popover.rubric-edit-popover .cancel").on('keydown', function(event) {
-      if (event.keyCode == 9) {
-        event.preventDefault();
-        $(this).parents('.popover.rubric-edit-popover').find('input').focus();
-      }
-    });
-  }
-
-  eatEvent(e) {
-    e.stopPropagation();
-  }
-
-  openEditWithKeyboard(e) {
-
-    if (e.keyCode == 32 || e.keyCode == 32 ) {
-      this.editRubric(e);
-    }
-  }
-
-  editRubric(e) {
-
-    e.preventDefault();
-    e.stopPropagation();
-    this.dispatchEvent(new CustomEvent("show-tooltip", {detail: this.rubric}));
-
-    if (!this.classList.contains("show-tooltip")) {
-      this.closeOpen();
-      this.popoverOpen = "true";
-      const target = this.querySelector(".fa-edit");
-
-      this.classList.add("show-tooltip");
-
-      const popover = $(`#edit_rubric_${this.rubric.id}`);
-
-      popover[0].style.top = `${target.offsetTop + 20  }px`;
-      popover[0].style.left = `${target.offsetLeft - 125  }px`;
-
-      popover.show();
-      const input =  popover.find("input[type='text']")[0];
-      input.setSelectionRange(0, input.value.length);
-      input.focus();
-
-    } else {
-      this.popoverOpen = "false";
-      this.hideToolTip();
-      $(`#edit_rubric_${this.rubric.id}`).hide();
-    }
-  }
-
-  closeOpen() {
-    $('.show-tooltip .cancel').click();
-  }
-
-  hideToolTip() {
-
-    this.classList.remove("show-tooltip");
-    this.dispatchEvent(new CustomEvent("hide-tooltip", {detail: this.rubric}));
-  }
-
-  cancelEdit(e) {
-
-    e.stopPropagation();
-    this.rubricClone.title = this.rubric.title;
-    this.hideToolTip();
-    const popover = $(`#edit_rubric_${this.rubric.id}`);
-    popover.find("input[type='text']")[0].value = this.rubric.title;
-    popover.hide();
-  }
-
-  saveEdit(e) {
-
-    e.stopPropagation();
-    const title = this.querySelector("#rubric_title_edit").value;
-    this.dispatchEvent(new CustomEvent("update-rubric-title", { detail: title }));
-    $(`#edit_rubric_${this.rubric.id}`).hide();
-    this.hideToolTip();
   }
 }
 
