@@ -99,21 +99,13 @@
     <nav id="toolMenu" role="navigation" aria-label="${rloader.sit_toolshead}" class="Mrphs-toolsNav__menu sakai-sitesAndToolsNav h-100 d-flex flex-column">
         <h2 class="visually-hidden d-none d-md-block" id="totoolmenu">${rloader.sitenav_title}</h2>
         #if (${userIsLoggedIn})
-            #if ($sidebarSites.currentSite)
-                <div class="sites-section">
-                    <h3 class="sites-section-heading sites-section-heading-current">${rloader.sitenav_title_current}</h3>
-                    <ul class="mb-0 list-unstyled">
-                        #siteListItem("current", $sidebarSites.currentSite, false, true)
-                    </ul>
-                </div>
-            #end
             #if ($sidebarSites.pinnedSites)
                 <div class="sites-section">
                     <h3 class="sites-section-heading">${rloader.sitenav_title_pinned}</h3>
                     <ul class="mb-0 list-unstyled">
                         #foreach ( $site in $sidebarSites.pinnedSites)
                             #if ($site.id != $currentSiteId)
-                                #siteListItem("pin-${velocityCount}", $site, false, false)
+                                #siteListItem("pin-${velocityCount}", $site, false, true)
                             #end
                         #end
                     </ul>
@@ -125,12 +117,20 @@
                     <ul class="mb-0 list-unstyled">
                         #foreach ( $site in $sidebarSites.recentSites)
                             #if ($site.id != $currentSiteId)
-                                #siteListItem("rec-${velocityCount}", $site, false, false)
+                                #siteListItem("rec-${velocityCount}", $site, false, true)
                             #end
                         #end
                     </ul>
                 </div>
             #end
+            #if ($sidebarSites.currentSite)
+                <div class="sites-section">
+                    <h3 class="sites-section-heading sites-section-heading-current">${rloader.sitenav_title_current}</h3>
+                    <ul class="mb-0 list-unstyled">
+                        #siteListItem("current", $sidebarSites.currentSite, true, true)
+                    </ul>
+                </div>
+            #end            
             <div class="sites-section p-1 mt-auto">
                 <a id="sakai-view-all-sites" class="btn btn-nav py-3 w-100 btn-site" href="javascript:;" data-bs-toggle="modal" data-bs-target="#select-site-modal">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid-3x3-gap-fill" viewBox="0 0 16 16">
