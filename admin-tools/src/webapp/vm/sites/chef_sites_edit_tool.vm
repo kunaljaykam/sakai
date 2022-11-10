@@ -47,11 +47,7 @@
 		</p>
 		<div class="shorttext">
 			<label for="layoutHints">$tlang.getString("siteditoo.lay")</label>
-			<input type="text"
-          name="layoutHints"
-          id="layoutHints"
-          #if($tool && $tool.LayoutHints) value="$!validator.escapeHtml($tool.LayoutHints)"#end
-      />
+			<input type="text" name="layoutHints" id="layoutHints" #if($tool && $tool.LayoutHints) value="$!validator.escapeHtml($tool.LayoutHints)"#end />
 		</div>
 		<p class="instruction labelindnt">$tlang.getString("siteditoo.rowcol")</p>
 			#if ($toolReg)
@@ -63,11 +59,7 @@
           #set ($paramValue = $toolParams.getProperty($paramName))
             <p class="shorttext">
               <label for="param_$paramName">$formattedText.escapeHtml($paramName):</label>
-              <input type="text"
-                  name="param_$paramName"
-                  id="param_$paramName"
-                  value="$formattedText.escapeHtml($paramValue)"
-              />
+              <input type="text" name="param_$paramName" id="param_$paramName" value="$formattedText.escapeHtml($paramValue)" />
             </p>
         #end
 
@@ -85,12 +77,7 @@
 								<label for="param_$paramName">$formattedText.escapeHtml($paramName):</label>
 							</th>
 							<td>
-								<input type="text"
-                    disabled
-                    name="param_$paramName"
-                    id="param_$paramName"
-                    value="$formattedText.escapeHtml($paramValue)"
-                />
+								<input type="text" disabled name="param_$paramName" id="param_$paramName" value="$formattedText.escapeHtml($paramValue)" />
 							</td>
 						</tr>
 					#end
