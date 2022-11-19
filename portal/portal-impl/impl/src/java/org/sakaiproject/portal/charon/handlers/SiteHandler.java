@@ -606,6 +606,10 @@ public class SiteHandler extends WorksiteHandler
 		    && ServerConfigurationService.getBoolean("search.enable", false));
 		rcontext.put("portalSearchPageSize", ServerConfigurationService.getString("portal.search.pageSize", "10"));
 
+		rcontext.put("useQuickLinks", ServerConfigurationService.getBoolean("portal.quicklinks.enabled", true)
+		    && ServerConfigurationService.getBoolean("quicklinks.enable", false));
+
+
 		//Show a confirm dialog when publishing an unpublished site.
 		rcontext.put("publishSiteDialogEnabled", ServerConfigurationService.getBoolean("portal.publish.site.confirm.enabled", false));
 		for (SitePage pageNow: site.getPages()){	//build Manage link for site access
@@ -643,15 +647,15 @@ public class SiteHandler extends WorksiteHandler
 		}
 		//Find any quick links ready for display in the top navigation bar,
 		//they can be set per site or for the whole portal.
-		if (userId != null) {
-			String skin = getSiteSkin(siteId);
-			String quickLinksTitle = portalService.getQuickLinksTitle(skin);
-			List<Map> quickLinks = portalService.getQuickLinks(skin);
-			if (CollectionUtils.isNotEmpty(quickLinks)) {
-				rcontext.put("quickLinksInfo", quickLinksTitle);
-				rcontext.put("quickLinks", quickLinks);
-			}
-		}
+		// if (userId != null) {
+		// 	String skin = getSiteSkin(siteId);
+		// 	String quickLinksTitle = portalService.getQuickLinksTitle(skin);
+		// 	List<Map> quickLinks = portalService.getQuickLinks(skin);
+		// 	if (CollectionUtils.isNotEmpty(quickLinks)) {
+		// 		rcontext.put("quickLinksInfo", quickLinksTitle);
+		// 		rcontext.put("quickLinks", quickLinks);
+		// 	}
+		// }
 		doSendResponse(rcontext, res, null);
 
 		StoredState ss = portalService.getStoredState();
