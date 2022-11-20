@@ -116,5 +116,9 @@
 *#
         #end
     #end
-    </ul>
+#* if user is not an admin then show the role switcher *#
+  #if ($viewAsStudentLink)
+      #parse("/vm/morpheus/snippets/roleSwitch-snippet.vm")
+  #end
+    </ol>
 </nav>
