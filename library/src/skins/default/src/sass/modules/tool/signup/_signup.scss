@@ -21,7 +21,7 @@
 	}
 	
 	#meeting{
-		input{
+		input:not(.hasDatepicker){
 			margin-right: 0.5em;
 		}
 

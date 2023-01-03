@@ -239,7 +239,7 @@ function removeOptionalAttributeBlock(elem) {
 					</div>
 				#end
 
-				<div class="mb-3 row">
+				<div class="mb-3 row align-items-center">
 					<label class="col-sm-2 col-form-label" for="disabled">
 						$tlang.getString("disable.user")
 					</label>
