@@ -316,54 +316,38 @@ SPNR.nodeListToArray = function( nodeList )
  * @param {DOM Element} element - the element being interacted with
  * @param {Boolean} activateSpinner - boolean flag to apply the spinner on the element or not
  */
-SPNR.disableElementAndSpin = function( divID, element, activateSpinner )
+SPNR.disableElementAndSpin = function( divID, element, clickedElement, activateSpinner )
 {
-    // First set the button to be invisible
-    const origDisplay = element.style.display;
-    element.style.display = "none";
+  // If the element is a button, disable it
+   element.disabled = true;
 
-    // Now create a new disabled button with the same attributes as the existing button
-    let newElement;
-    if( element.type === "submit" || element.type === "button" )
+   // Add the spinner to the clicked element if the flag is set
+    if( activateSpinner )
     {
-        newElement = document.createElement( "button" );
-    }
-    else
-    {
-        newElement = document.createElement( "input" );
-        newElement.setAttribute( "type", element.type );
-    }
+        // Create the spinner
+        const spinner = document.createElement( "span" );
+        spinner.className = "spinner-border spinner-border-sm";
+        spinner.setAttribute( "role", "status" );
+        spinner.setAttribute( "aria-hidden", "true" );
 
-    const oldId = element.getAttribute( "id" );
-    let newId = (oldId !== null) ? oldId : Math.random().toString(36).substring(2, 15);
-    newElement.setAttribute( "id", newId + "Disabled" );
-    newElement.setAttribute( "name", element.getAttribute( "name" ) + "Disabled" );
-    newElement.setAttribute( "value", element.getAttribute( "value" ) );
-    newElement.setAttribute( "disabled", "true" );
-    newElement.style.display = origDisplay;
-
-    if( element.type === "checkbox" || element.type === "radio" )
-    {
-        newElement.checked = element.checked;
-    }
-    else
-    {
-        // <input>                --> localName = "input", nodeName="INPUT", tagName="INPUT", type="text"
-        // <input type="submit">  --> localName = "input", nodeName="INPUT", tagName="INPUT", type="submit"
-        // <button>               --> localName = "button", nodeName="button", tagName="BUTTON", type="submit"
-        // <button type="button"> --> localName = "button", nodeName="button", tagName="BUTTON", type="button"
-        element.tagName === "BUTTON" ? newElement.innerHTML = element.innerHTML : newElement.textContent = element.getAttribute( "value" );
-        newElement.className = activateSpinner ? "spinButton formButtonDisabled" : "formButtonDisabled";
+        // add the spinner to the clicked element
+        element.appendChild( spinner );
     }
 
-    if( "" !== divID )
-    {
-        const div = document.getElementById( divID );
-        div.insertBefore( newElement, element );
-    }
-    else
-    {
-        const parent = element.parentNode;
-        parent.insertBefore( newElement, element );
-    }
+    const spinner = document.createElement( "span" );
+    spinner.className = "spinner-border spinner-border-sm";
+    spinner.setAttribute( "role", "status" );
+    spinner.setAttribute( "aria-hidden", "true" );
+
+    // add the spinner to the clicked element
+    element.appendChild( spinner );
+
+
+
+
+
+
+
+
+
 };
