@@ -30,9 +30,8 @@ export const calendarStyles = css`
     min-width: 25px;
     min-height: 25px;
     font-size: 20px;
-    font-weight: bold;
     background: var(--sakai-background-color);
-    color: var(--link-color);
+    color: var(--sakai-text-color);
   }
 
   .sakai-calendar__navigation__today {
@@ -43,7 +42,7 @@ export const calendarStyles = css`
   .sakai-calendar__navigation__today > a {
     font-weight: bold;
     text-decoration: none;
-    color: var(--link-color);
+    color: var(--sakai-text-color);
   }
 
   #add-block {
