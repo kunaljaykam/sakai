@@ -34,18 +34,6 @@
                     data-pinned="$!{site.isPinned}"
                     title="${pinTitle}">
                 </button>
-                #if ($site.description)
-                <button class="d-inline-block p-1 btn bi bi-info-circle btn-site-opt site-description-button"
-                    data-bs-toggle="popover"
-                    data-bs-trigger="focus"
-                    data-bs-html="true"
-                    data-bs-content-id="description-${site.id}"
-                    data-bs-trigger="focus"
-                    aria-label="Click for the full site description"
-                    aria-expanded="false">
-                </button>
-                <div id="description-${site.id}" class="d-none">${site.description}</div>
-                #end
             #end
         </div>
         <div id="site-${index}-pages" class="site-list-item-collapse collapse #if ($isCurrentSite && !($isUserSite && $justLoggedIn))show#end">
