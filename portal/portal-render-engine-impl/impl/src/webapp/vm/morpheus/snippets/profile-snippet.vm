@@ -54,9 +54,9 @@
         </div>
         <div id="sakai-accountPanelWidgets-collapseTwo" class="accordion-collapse collapse" aria-labelledby="sakai-accountPanelWidgets-headingTwo">
           <div class="accordion-body p-2">
-          ## Calendar webcomponent
-          <sakai-calendar></sakai-calendar>
-        </div>
+            ## Calendar webcomponent
+            <sakai-calendar></sakai-calendar>
+          </div>
         </div>
       </div>
       <div class="accordion-item">
@@ -67,20 +67,21 @@
         </div>
         <div id="sakai-accountPanelWidgets-collapseThree" class="accordion-collapse collapse" aria-labelledby="sakai-accountPanelWidgets-headingThree">
           <div class="accordion-body p-2">
-          ## Grades webcomponent
-          <sakai-grades></sakai-grades>
+            ## Grades webcomponent
+            <sakai-grades></sakai-grades>
           </div>
         </div>
       </div>
     </div>
-        <div class="text-center border-top pt-3 mt-auto">
+    <div class="text-center border-top pt-3 mt-auto">
       <fieldset class="btn-group" role="radiogroup" aria-label="Switch between light and dark themes">
-            <button role="switch" aria-checked="false"
-                id="sakai-darkThemeSwitcher" class="sakaiThemeSwitch Mrphs-userNav__submenuitem--themeSwitcher switch">
-                <span class="bi bi-sun"> ${rloader.sit_themeSwitcherOff}</span> ## Note: The space before the variable is intentional to ensure proper spacing in the rendered output
-                <span class="bi bi-moon"> ${rloader.sit_themeSwitcherOn}</span>
-            </button>
+        <button role="switch" aria-checked="false"
+            id="sakai-darkThemeSwitcher" class="sakaiThemeSwitch Mrphs-userNav__submenuitem--themeSwitcher switch">
+          <span class="bi bi-sun"> ${rloader.sit_themeSwitcherOff}</span> ## Note: The space before the variable is intentional to ensure proper spacing in the rendered output
+          <span class="bi bi-moon"> ${rloader.sit_themeSwitcherOn}</span>
+        </button>
       </fieldset>
+    </div>
   </div>
 </aside>
 #end

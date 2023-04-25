@@ -19,20 +19,6 @@
 
 @include media-breakpoint-up(md) {
 
-  button.btn-sidebar-collapse > i::before {
-    font-family: "bootstrap-icons";
-    content: '\F284';
-    font-size: 26px;
-    font-style: normal;
-  }
-
-  button[data-portal-sidebar-collapsed=true] > i::before {
-    font-family: "bootstrap-icons";
-    content: '\F285';
-    font-size: 26px;
-    font-style: normal;
-  }
-
   .portal-container {
     grid-template-columns: var(--portal-nav-sidebar-width) 1fr;
     grid-template-rows: auto auto var(--portal-header-height) 1fr;
