@@ -28,7 +28,17 @@
           #end
         #end
         <li class="nav-item py-2 d-none"><button type="button" class="btn btn-primary">${rloader.sit_log}</button></li>
-        <li class="nav-item py-2"><a href="${loginLogInOutUrl}" title="${loginMessage}" id="loginLink1" class="btn btn-primary" data-warning="${logoutWarningMessage}"><span class="Mrphs-login-Message">${loginMessage}</span></a></li>
+        <li>
+          <div class="text-center border-top pt-3 mt-auto">
+            <fieldset class="btn-group" role="radiogroup" aria-label="Switch between light and dark themes">
+              <button role="switch" aria-checked="false"
+                  id="sakai-darkThemeSwitcher" class="sakaiThemeSwitch Mrphs-userNav__submenuitem--themeSwitcher switch">
+                <span class="bi bi-sun"> ${rloader.sit_themeSwitcherOff}</span> ## Note: The space before the variable is intentional to ensure proper spacing in the rendered output
+                <span class="bi bi-moon"> ${rloader.sit_themeSwitcherOn}</span>
+              </button>
+            </fieldset>
+          </div>
+        </li>
       </ul>
     </div>
 
@@ -73,14 +83,10 @@
         </div>
       </div>
     </div>
-    <div class="text-center border-top pt-3 mt-auto">
-      <fieldset class="btn-group" role="radiogroup" aria-label="Switch between light and dark themes">
-        <button role="switch" aria-checked="false"
-            id="sakai-darkThemeSwitcher" class="sakaiThemeSwitch Mrphs-userNav__submenuitem--themeSwitcher switch">
-          <span class="bi bi-sun"> ${rloader.sit_themeSwitcherOff}</span> ## Note: The space before the variable is intentional to ensure proper spacing in the rendered output
-          <span class="bi bi-moon"> ${rloader.sit_themeSwitcherOn}</span>
-        </button>
-      </fieldset>
+    <div class="text-center mt-2">
+      <a href="${loginLogInOutUrl}" title="${loginMessage}" id="loginLink1" class="btn btn-primary" data-warning="${logoutWarningMessage}">
+        <span class="Mrphs-login-Message">${loginMessage}</span>
+      </a>
     </div>
   </div>
 </aside>
