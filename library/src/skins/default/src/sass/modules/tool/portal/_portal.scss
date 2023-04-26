@@ -439,6 +439,17 @@ a[href]:not(.btn):hover {
   color: var(--sakai-pin-hover-color);
 }
 
+:root.sakaiUserTheme-dark {
+
+  .bi-pin, .bi-pin-fill {
+    color: white;
+  }
+
+  .bi-pin:hover, .bi-pin-fill:hover {
+    color: black;
+  }
+}
+
 .sakai-sitesAndToolsNav * {
   text-decoration: none;
 }
