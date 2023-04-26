@@ -349,7 +349,8 @@ a[href]:not(.btn):hover {
   }
 
   .sites-section-heading {
-    @extend .mb-0, .pb-2, .pt-3, .ps-3, .fs-4;
+    @extend .mb-0, .pb-2, .pt-3, .ps-3;
+    font-size: 16px;
     background-color: var(--site-nav-list-item-bg);
   }
 
@@ -367,7 +368,6 @@ a[href]:not(.btn):hover {
     }
     border: none;
   }
-
 
   .btn-nav {
     color: var(--button-color);
