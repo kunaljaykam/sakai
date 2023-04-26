@@ -1,9 +1,8 @@
-#sakai-darkThemeSwitcher {
+#sakai-dark-theme-switcher {
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: var(--sakai-background-color-1);
-    font-size: 16px;
     line-height: 30px;
     border: 1px solid var(--sakai-border-color);
     font-weight: normal;
@@ -16,8 +15,8 @@
     }
 }
 
-#sakai-darkThemeSwitcher[role="switch"][aria-checked="false"] :first-child,
-#sakai-darkThemeSwitcher[role="switch"][aria-checked="true"] :last-child {
+#sakai-dark-theme-switcher[role="switch"][aria-checked="false"] :first-child,
+#sakai-dark-theme-switcher[role="switch"][aria-checked="true"] :last-child {
     display: inline-block;
     border-radius: $button-radius; 
     background: var(--sakai-primary-color-1);
@@ -25,13 +24,13 @@
 
 }
 
-#sakai-darkThemeSwitcher[role="switch"][aria-checked="false"] :last-child,
-#sakai-darkThemeSwitcher[role="switch"][aria-checked="true"] :first-child {
+#sakai-dark-theme-switcher[role="switch"][aria-checked="false"] :last-child,
+#sakai-dark-theme-switcher[role="switch"][aria-checked="true"] :first-child {
     background: none;
     color: var(--sakai-text-color-1);
 }
 
-.sakaiThemeSwitch {
+.sakai-theme-switch {
     margin-bottom: 0;
     font-weight: normal;
     color: var(--sakai-text-color-1);

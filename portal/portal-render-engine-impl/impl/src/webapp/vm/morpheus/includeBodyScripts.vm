@@ -214,7 +214,7 @@
 
 
 #if (${sakaiThemesEnabled})
-<script src="$!{portalCDNPath}/portal/scripts/themeswitcher.js$!{portalCDNQuery}"></script>
+<script src="${pageScriptPath}portal/portal.theme.switcher.js$!{portalCDNQuery}"></script>
 #end
 
 <script>
