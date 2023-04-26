@@ -11,53 +11,23 @@ portal.toggleDarkTheme = () => {
   portal.darkThemeSwitcher && portal.darkThemeSwitcher.getAttribute("aria-checked") === "false" ? portal.enableDarkTheme() : portal.enableLightTheme();
 };
 
-// if the dark theme switch is on the page, attach listener to dark theme toggle switch
-portal.darkThemeSwitcher && portal.darkThemeSwitcher.addEventListener('click', portal.toggleDarkTheme, false);
-
-if (portal.userThemeAutoDetectDark) {
-  if (portal.user.id) {
-    // only check for unset theme preference because light and dark themes are already set by Java
-    if (portal.userTheme === portal.defaultThemeClass) {
-        // if the user has dark mode set on their OS, enable dark mode
-        if (portal.isOsDarkThemeSet()) {
-            portal.enableDarkTheme();
-        } else {
-            // to define a user preference:
-            portal.setPortalThemeUserPref(portal.lightThemeClass);
-        }
-    }
-  } else if (portal.isOsDarkThemeSet()) {
-      // just add the dark theme to the markup if not logged in and the user has dark mode set on their OS (no prefs to save)
-      portal.addCssClassToMarkup(portal.darkThemeClass);
-  }
-}
-if (document.documentElement.classList.contains(portal.darkThemeClass)) {
-    // the dark theme switch toggle is off by default, so toggle it to on if dark theme is enabled
-    portal.setDarkThemeSwitcherToggle(true);
-}
-
-portal.addCssClassToMarkup = themeClass => {
-  document.documentElement.classList.add(themeClass);
-};
-
-portal.removeCssClassFromMarkup = themeClass => {
-  document.documentElement.classList.remove(themeClass);
-};
-
-portal.isOsDarkThemeSet = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
-
 portal.setDarkThemeSwitcherToggle = onOff => {
   portal.darkThemeSwitcher && portal.darkThemeSwitcher.setAttribute("aria-checked", onOff);
 };
 
+portal.addCssClassToMarkup = themeClass => document.documentElement.classList.add(themeClass);
+
+portal.removeCssClassFromMarkup = themeClass => document.documentElement.classList.remove(themeClass);
+
+portal.isOsDarkThemeSet = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+
 portal.setPortalThemeUserPref = theme => {
 
-  var url = '/direct/userPrefs/updateKey/' + portal.user.id + '/sakai:portal:theme?theme=' + theme;
-  var ajaxRequest = new XMLHttpRequest();
+  const url = `/direct/userPrefs/updateKey/${portal.user.id}/sakai:portal:theme?theme=${theme}`;
+  const ajaxRequest = new XMLHttpRequest();
   ajaxRequest.open("PUT", url);
   ajaxRequest.send();
 };
-
 
 portal.enableDarkTheme = () => {
 
@@ -76,3 +46,24 @@ portal.enableLightTheme = () => {
   portal.addCssClassToMarkup(portal.lightThemeClass);
   portal.setPortalThemeUserPref(portal.lightThemeClass);
 };
+
+// if the dark theme switch is on the page, attach listener to dark theme toggle switch
+portal.darkThemeSwitcher && portal.darkThemeSwitcher.addEventListener('click', portal.toggleDarkTheme, false);
+
+if (portal.userThemeAutoDetectDark) {
+  if (portal.user.id) {
+    // only check for unset theme preference because light and dark themes are already set by Java
+    if (portal.userTheme === portal.defaultThemeClass) {
+      // if the user has dark mode set on their OS, enable dark mode
+      portal.isOsDarkThemeSet() ? portal.enableDarkTheme() : portal.setPortalThemeUserPref(portal.lightThemeClass);
+    }
+  } else if (portal.isOsDarkThemeSet()) {
+    // just add the dark theme to the markup if not logged in and the user has dark mode set on their OS (no prefs to save)
+    portal.addCssClassToMarkup(portal.darkThemeClass);
+  }
+}
+
+if (document.documentElement.classList.contains(portal.darkThemeClass)) {
+  // the dark theme switch toggle is off by default, so toggle it to on if dark theme is enabled
+  portal.setDarkThemeSwitcherToggle(true);
+}
