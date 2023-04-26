@@ -491,8 +491,6 @@ public class PortalSiteHelperImpl implements PortalSiteHelper
 			//Get pinned sites
 			Set<String> pinnedSiteIds = getPinnedSiteIds();
 			if (pinnedSiteIds != null) {
-				// We don't want to show a site twice. Remvove the current site from the pinned.
-				pinnedSiteIds.remove(currentSiteId);
 				Collection<Site> pinnedSites = getSites(pinnedSiteIds);
 				if (!pinnedSites.isEmpty()) {
 					contextSites.put("pinnedSites", getSiteMaps(pinnedSites, true, true));
@@ -501,6 +499,7 @@ public class PortalSiteHelperImpl implements PortalSiteHelper
 
 			//Get most recent sites
 			Collection<String> recentSiteIds = getRecentSiteIds(currentSite);
+            recentSiteIds.remove(currentSiteId);
 			// We don't want to see a site twice. Removed any pinned sites from the recents.
 			if (pinnedSiteIds != null) {
 				recentSiteIds.removeAll(pinnedSiteIds);

@@ -5,16 +5,17 @@ class SitesSidebar {
     this._i18n = config?.i18n;
     this._element = element;
     this._lessonsSubpageData = config?.lessonsSubpageData;
+    this._pinnedSiteList = document.getElementById("pinned-site-list");
+    this._recentSiteList = document.getElementById("recent-site-list");
 
     const sitesListItems = element.querySelectorAll(".site-list-item");
-    //sitesListItems.forEach(sitesListItem => new LessonsSubPageNavigation(this._lessonsSubpageData))
 
     const pinButtonElements = element.querySelectorAll(".site-opt-pin");
-    pinButtonElements.forEach((buttonEl) => new PinButton(buttonEl, { i18n: this._i18n?.pinButtons}));
+    pinButtonElements.forEach(buttonEl => new PinButton(buttonEl, { i18n: this._i18n?.pinButtons}));
 
     element.querySelectorAll(".site-description-button").forEach(buttonEl => new bootstrap.Popover(buttonEl));
 
-    document.addEventListener("site-pin-change", this.handlePinChange);
+    document.addEventListener("site-pin-change", this.handlePinChange.bind(this));
 
     element.querySelectorAll(".site-list-item-collapse").forEach(btn => {
 
@@ -77,9 +78,9 @@ class SitesSidebar {
 
     if (favoritesReq.ok) {
       const favoritesValues = await favoritesReq.json();
-      const pinedRemote = favoritesValues.favoriteSiteIds.includes(siteId);
+      const alreadyPinned = favoritesValues.favoriteSiteIds.includes(siteId);
 
-      if (pinned !== pinedRemote) {
+      if (pinned !== alreadyPinned) {
         const payload = JSON.parse(JSON.stringify(favoritesValues));
         if (pinned) {
           payload.favoriteSiteIds.push(siteId);
@@ -101,6 +102,46 @@ class SitesSidebar {
 
           if (!r.ok) {
             throw new Error(`Network error while updating pinned sites at url ${url}`);
+          } else {
+            const currentItem = pinButton.closest(".site-list-item");
+            if (pinned) {
+              const originalLink = currentItem.querySelector("a");
+              const template = document.getElementById("site-list-item-template");
+              const newItem = template.content.cloneNode(true);
+              newItem.querySelector("a").innerHTML = originalLink.innerHTML;
+              newItem.querySelector("a").href = originalLink.href;
+
+              const newButton = newItem.querySelector("button");
+              newButton.classList.add("bi-pin-fill");
+              newButton.dataset.pinned = "true";
+              newButton.dataset.pinSite = siteId;
+
+              !currentItem.classList.contains("is-current-site") && currentItem.remove();
+
+              this._pinnedSiteList.append(newItem);
+              this._pinnedSiteList.lastElementChild.dataset.site = siteId;
+              this._pinnedSiteList.parentElement.classList.remove("d-none");
+              new PinButton(newButton, { i18n: this._i18n?.pinButtons });
+            } else {
+              document.querySelectorAll(`#toolMenu button[data-pin-site="${siteId}"]`).forEach(b => {
+
+                b.classList.remove("bi-pin-fill");
+                b.dataset.pinned = "false";
+                b.classList.add("bi-pin");
+              });
+
+              if (!currentItem.classList.contains("is-current-site")) {
+                currentItem.remove();
+              } else {
+                this._pinnedSiteList.querySelector(`li[data-site="${siteId}"`).remove();
+              }
+              if (!this._pinnedSiteList.children.length) {
+                this._pinnedSiteList.parentElement.classList.add("d-none");
+              }
+            }
+            if (!this._recentSiteList.children.length) {
+              this._recentSiteList.parentElement.classList.add("d-none");
+            }
           }
         })
         .catch (error => console.error(error));
@@ -118,27 +159,28 @@ class SitesSidebar {
 class PinButton {
 
   get title() {
-    return this._element.getAttribute("title");
+    return this._element.title;
   }
 
   set title(newValue) {
-    this._element.setAttribute("title", newValue);
+    this._element.title = newValue;
   }
 
   get pinned() {
-    return this._element.getAttribute("data-pinned") == "true" ? true : false;
+    return this._element.dataset.pinned === "true";
   }
 
   set pinned(newPinned) {
-    this._element.setAttribute("data-pinned", newPinned);
+    this._element.dataset.pinned = newPinned;
   }
 
   constructor(element, config) {
 
     this._element = element;
     this._i18n = config?.i18n;
-    this._site = element.getAttribute("data-pin-site");
+    this._site = element.dataset.pinSite;
     element.addEventListener("click", this.toggle.bind(this));
+    this.title = element.dataset.pinned ? this._i18n.titleUnpin : this._i18n.titlePin;
   }
 
   toggle() {
@@ -158,7 +200,7 @@ class PinButton {
     buttonClasses.toggle(unPinnedIcon);
   }
 
-  //Dispatches event which will cause a fetch to cange pinned value
+  // Dispatches event which will cause a fetch to change pinned value
   emitPinChange() {
 
     const eventName = "site-pin-change";

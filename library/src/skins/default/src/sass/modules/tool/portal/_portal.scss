@@ -330,6 +330,7 @@ a[href]:not(.btn):hover {
       --button-hover-bg: var(--site-nav-btn-current-hover-bg);
       --button-hover-border-color: var(--site-nav-btn-current-hover-border-color);
       --bs-btn-focus-shadow-rgb: 38, 88, 129;
+      --bs-btn-font-size: 16px;
       --button-active-color: var(--site-nav-btn-current-active-color);
       --button-active-bg: var(--site-nav-btn-current-active-bg);
       --button-active-border-color: var(--site-nav-btn-current-active-border-color);
@@ -339,8 +340,8 @@ a[href]:not(.btn):hover {
     }
   }
 
-  .site-opt-pin:hover {
-    color: var(--sakai-pin-hover-color);
+  .is-current-site > div > div > a {
+    font-size: 16px;
   }
 
   .sakai-sitesAndToolsNav {
@@ -348,7 +349,7 @@ a[href]:not(.btn):hover {
   }
 
   .sites-section-heading {
-    @extend .mb-0, .pb-2, .pt-3, .ps-3, .fs-5;
+    @extend .mb-0, .pb-2, .pt-3, .ps-3, .fs-4;
     background-color: var(--site-nav-list-item-bg);
   }
 
@@ -366,6 +367,7 @@ a[href]:not(.btn):hover {
     }
     border: none;
   }
+
 
   .btn-nav {
     color: var(--button-color);
@@ -423,9 +425,6 @@ a[href]:not(.btn):hover {
 
   &.portal-nav-sidebar-desktop {
     background-color: var(--sakai-background-color-3);
-    .site-list-item:not(:hover):not(:focus-within) .btn-site-opt {
-      color: transparent;
-    }
     .site-list-item-collapse {
       background-color: var(--sakai-background-color-2);
     }
@@ -434,6 +433,10 @@ a[href]:not(.btn):hover {
   .fa-tool-menu-icon {
     margin-top: 5px;
   }
+}
+
+.site-opt-pin {
+  color: var(--sakai-pin-hover-color);
 }
 
 .sakai-sitesAndToolsNav * {

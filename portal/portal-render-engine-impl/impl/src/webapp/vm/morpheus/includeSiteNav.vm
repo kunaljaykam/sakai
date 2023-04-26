@@ -1,4 +1,19 @@
-#macro( siteListItem $index $site $isExpanded $isCurrentSite)
+<template id="site-list-item-template">
+  <li class="site-list-item py-1">
+    <div class="site-list-item-head d-flex align-items-center pe-2">
+      <div class="site-link-block d-flex align-items-center rounded-end me-1 pe-2">
+        <a class="text-break ms-3"></a>
+      </div>
+      <button class="d-inline-block p-1 site-opt-pin btn btn-site-opt bi"
+          data-pin-site=""
+          data-pinned=""
+          title="">
+      </button>
+    </div>
+  </li>
+</template>
+
+#macro( siteListItem $index $site $isExpanded $isCurrentSite $addPages)
 
     #if ($site.isPinned)
         #set ($pinTitle = $rloader.sitenav_btn_unpin)
@@ -9,16 +24,17 @@
     #end
 
     #if ($isCurrentSite)
-        #set ($currentSiteClass = "is-current-site")
+        #set ($currentSiteClass = "is-current-site mt-2 fw-bold")
         #set ($isExpanded = "true")
     #else
         #set ($currentSiteClass = "")
         #set ($isExpanded = "false")
     #end
 
-    <li class="site-list-item py-1 $!{currentSiteClass}">
+    <li id="site-list-item-${site.id}" class="site-list-item py-1 $!{currentSiteClass}" data-site="${site.id}">
         <div class="site-list-item-head d-flex align-items-center pe-2">
             <div class="site-link-block d-flex align-items-center rounded-end me-1 pe-2">
+                #if ($addPages)
                 <button class="btn icon-button border-0 #if (!$isCurrentSite)collapsed#end"
                         data-bs-toggle="collapse"
                         data-bs-target="#site-${index}-pages"
@@ -26,7 +42,8 @@
                         aria-controls="site-${index}-pages">
                     <i class="bi bi-chevron-right" aria-hidden="true"></i>
                 </button>
-                <a href="$site.url" class="text-break">${site.title}</a>
+                #end
+                <a href="$site.url" class="text-break #if (!$isCurrentSite)ms-3#end">${site.title}</a>
             </div>
             #if ($loggedIn)
                 <button class="d-inline-block p-1 site-opt-pin btn btn-site-opt bi $!{pinIconClass}"
@@ -36,6 +53,7 @@
                 </button>
             #end
         </div>
+        #if ($addPages)
         <div id="site-${index}-pages" class="site-list-item-collapse collapse #if ($isCurrentSite && !($isUserSite && $justLoggedIn))show#end">
             <ul class="site-page-list nav flex-column py-1 mb-2">
             #foreach ( $page in $site.pages )
@@ -65,6 +83,7 @@
             #end
             </ul>
         </div>
+        #end
     </li>
 #end
 
@@ -101,36 +120,27 @@
         #if (${userIsLoggedIn})
             #if ($sidebarSites.currentSite)
                 <div class="sites-section">
-                    <h3 class="sites-section-heading sites-section-heading-current">${rloader.sitenav_title_current}</h3>
                     <ul class="mb-0 list-unstyled">
-                        #siteListItem("current", $sidebarSites.currentSite, false, true)
+                        #siteListItem("current", $sidebarSites.currentSite, false, true, true)
                     </ul>
                 </div>
             #end
-            #if ($sidebarSites.pinnedSites)
-                <div class="sites-section">
-                    <h3 class="sites-section-heading">${rloader.sitenav_title_pinned}</h3>
-                    <ul class="mb-0 list-unstyled">
-                        #foreach ( $site in $sidebarSites.pinnedSites)
-                            #if ($site.id != $currentSiteId)
-                                #siteListItem("pin-${velocityCount}", $site, false, false)
-                            #end
-                        #end
-                    </ul>
-                </div>
-            #end
-            #if ($sidebarSites.recentSites)
-                <div class="sites-section">
-                    <h3 class="sites-section-heading">${rloader.sitenav_title_recent}</h3>
-                    <ul class="mb-0 list-unstyled">
-                        #foreach ( $site in $sidebarSites.recentSites)
-                            #if ($site.id != $currentSiteId)
-                                #siteListItem("rec-${velocityCount}", $site, false, false)
-                            #end
-                        #end
-                    </ul>
-                </div>
-            #end
+            <div class="sites-section #if (!$sidebarSites.pinnedSites)d-none#end">
+                <h3 class="sites-section-heading">${rloader.sitenav_title_pinned}</h3>
+                <ul id="pinned-site-list" class="mb-0 list-unstyled">
+                    #foreach ($site in $sidebarSites.pinnedSites)
+                        #siteListItem("pin-${velocityCount}", $site, false, false, false)
+                    #end
+                </ul>
+            </div>
+            <div class="sites-section #if (!$sidebarSites.recentSites)d-none#end">
+                <h3 class="sites-section-heading">${rloader.sitenav_title_recent}</h3>
+                <ul id="recent-site-list" class="mb-0 list-unstyled">
+                    #foreach ($site in $sidebarSites.recentSites)
+                        #siteListItem("rec-${velocityCount}", $site, false, false, false)
+                    #end
+                </ul>
+            </div>
             <div class="sites-section p-1 mt-auto">
                 <a id="sakai-view-all-sites" class="btn btn-nav py-3 w-100 btn-site" href="javascript:;" data-bs-toggle="offcanvas" data-bs-target="#select-site-sidebar" aria-controls="select-site-sidebar">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="si si-grid-3x3-fill" viewBox="0 0 16 16">
@@ -144,7 +154,7 @@
                 <div class="sites-section">
                     <h3 class="visually-hidden sites-section-heading">${rloader.sitenav_title_current}</h3>
                     <ul class="pt-2 mb-0 list-unstyled">
-                        #siteListItem("gateway", $sidebarSites.gatewaySite, true, true)
+                        #siteListItem("gateway", $sidebarSites.gatewaySite, true, true, true)
                     </ul>
                 </div>
             #end
