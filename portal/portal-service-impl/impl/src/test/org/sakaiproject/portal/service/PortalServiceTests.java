@@ -68,13 +68,17 @@ public class PortalServiceTests extends SakaiTests {
 
         when(sessionManager.getCurrentSessionUserId()).thenReturn(user1);
 
+        String user1SiteId = "~user1";
+
+        when(siteService.getUserSiteId(user1)).thenReturn(user1SiteId);
+
         Set<String> siteIds = new HashSet<>();
         siteIds.add(site1Id);
         siteIds.add("site2");
 
         portalService.savePinnedSites(siteIds);
 
-        assertEquals(2, portalService.getPinnedSites().size());
+        assertEquals(3, portalService.getPinnedSites().size());
 
         Event event = mock(Event.class);
         when(event.getContext()).thenReturn(site1Id);
@@ -88,14 +92,14 @@ public class PortalServiceTests extends SakaiTests {
 
         ((PortalServiceImpl) AopTestUtils.getTargetObject(portalService)).update(null, event);
 
-        assertEquals(1, portalService.getPinnedSites().size());
+        assertEquals(2, portalService.getPinnedSites().size());
 
         when(event.getEvent()).thenReturn(SiteService.SECURE_REMOVE_SITE);
 
         ((PortalServiceImpl) AopTestUtils.getTargetObject(portalService)).update(null, event);
 
         when(sessionManager.getCurrentSessionUserId()).thenReturn(user2);
-        assertEquals(0, portalService.getPinnedSites().size());
+        assertEquals(1, portalService.getPinnedSites().size());
     }
 
     @Test

@@ -401,7 +401,9 @@ public class PortalSiteHelperImpl implements PortalSiteHelper
 		return getSimplePageToolDao().getLessonSubPageJSON(userId, updatePermisson, siteId, pageMapList);
 	}
 
-	private Map<String, Object> getSiteMap(Site site, boolean includePages, boolean includeSubSites) {
+	private Map<String, Object> getSiteMap(Site site, boolean includePages, boolean includeSubSites, boolean pinned) {
+
+		String userId = userDirectoryService.getCurrentUser().getId();
 
 		Map<String, Object> siteMap = new HashMap<>();
 		siteMap.put("id", site.getId());
@@ -410,26 +412,27 @@ public class PortalSiteHelperImpl implements PortalSiteHelper
 		siteMap.put("type", site.getType());
 		siteMap.put("description", site.getDescription());
 		siteMap.put("shortDescription", site.getShortDescription());
-		siteMap.put("isPinned", isSitePinned(site.getId()));
+		siteMap.put("isPinned", pinned ? true : isSitePinned(site.getId()));
+		siteMap.put("isHome", site.getId().equals(siteService.getUserSiteId(userId)));
 		if (includePages) {
 			List<SitePage> pageList = site.getOrderedPages();
 			siteMap.put("pages", getPageMaps(pageList, site));
 			siteMap.put("lessonsSubPages", getLessonsSubpages(
-					userDirectoryService.getCurrentUser().getId(),
+					userId,
 					securityService.unlock("site.upd", site.getReference()), site.getId(), pageList));
 		}
 		if (includeSubSites) {
 			List<Site> subSites = getSubSites(site);
 			if (subSites != null && !subSites.isEmpty()) {
-				siteMap.put("subSites", getSiteMaps(subSites, false, false));
+				siteMap.put("subSites", getSiteMaps(subSites, false, false, false));
 			}
 		}
 		return siteMap;
 	}
 
-	private List<Map<String, Object>> getSiteMaps(Collection<Site> sites, boolean includePages, boolean includeSubSites) {
+	private List<Map<String, Object>> getSiteMaps(Collection<Site> sites, boolean includePages, boolean includeSubSites, boolean pinned) {
 
-		return sites.stream().map(site -> getSiteMap(site, includePages, includeSubSites))
+		return sites.stream().map(site -> getSiteMap(site, includePages, includeSubSites, pinned))
 			.collect(Collectors.toList());
 	}
 
@@ -485,7 +488,7 @@ public class PortalSiteHelperImpl implements PortalSiteHelper
 			//Get current site
 			Site currentSite = getSite(currentSiteId);
 			if (currentSite != null) {
-				contextSites.put("currentSite", getSiteMap(currentSite, true, true));
+				contextSites.put("currentSite", getSiteMap(currentSite, true, true, false));
 			}
 
 			//Get pinned sites
@@ -493,7 +496,10 @@ public class PortalSiteHelperImpl implements PortalSiteHelper
 			if (pinnedSiteIds != null) {
 				Collection<Site> pinnedSites = getSites(pinnedSiteIds);
 				if (!pinnedSites.isEmpty()) {
-					contextSites.put("pinnedSites", getSiteMaps(pinnedSites, true, true));
+					// Sort the perma pinned home to be the first pinned site
+					List<Map<String, Object>> siteMaps = getSiteMaps(pinnedSites, true, true, true);
+					Collections.sort(siteMaps, (first, second) -> ((Boolean) first.get("isHome")) ? -1 : 0);
+					contextSites.put("pinnedSites", siteMaps);
 				}
 			}
 
@@ -506,13 +512,13 @@ public class PortalSiteHelperImpl implements PortalSiteHelper
 			}
 			Collection<Site> recentSites = getSites(recentSiteIds);
 			if (!recentSites.isEmpty()) {
-				contextSites.put("recentSites", getSiteMaps(recentSites, true, true));
+				contextSites.put("recentSites", getSiteMaps(recentSites, true, true, false));
 			}
 		} else {
 			//Get gateway site
 			Site gatewaySite = getSite(serverConfigurationService.getGatewaySiteId());
 			if (!gatewaySite.isEmpty()) {
-				contextSites.put("gatewaySite", getSiteMap(gatewaySite, true, true));
+				contextSites.put("gatewaySite", getSiteMap(gatewaySite, true, true, false));
 			}
 		}
 		return contextSites;

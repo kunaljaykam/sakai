@@ -45,7 +45,7 @@
                 #end
                 <a href="$site.url" class="text-break #if (!$isCurrentSite)ms-3#end">${site.title}</a>
             </div>
-            #if ($loggedIn)
+            #if ($loggedIn && !${site.isHome})
                 <button class="d-inline-block p-1 site-opt-pin btn btn-site-opt bi $!{pinIconClass}"
                     data-pin-site="${site.id}"
                     data-pinned="$!{site.isPinned}"
@@ -143,7 +143,7 @@
             </div>
             <div class="sites-section p-1 mt-auto">
                 <a id="sakai-view-all-sites" class="btn btn-nav py-3 w-100 btn-site" href="javascript:;" data-bs-toggle="offcanvas" data-bs-target="#select-site-sidebar" aria-controls="select-site-sidebar">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="si si-grid-3x3-fill" viewBox="0 0 16 16">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="si si-all-sites" viewBox="0 0 16 16">
                         <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V7zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-2z"></path>
                     </svg>
                     <span class="ps-1">${rloader.sitenav_link_allsites}</span>
