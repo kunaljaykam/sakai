@@ -176,11 +176,13 @@ class PinButton {
 
   constructor(element, config) {
 
+    console.log(element);
+
     this._element = element;
     this._i18n = config?.i18n;
     this._site = element.dataset.pinSite;
     element.addEventListener("click", this.toggle.bind(this));
-    this.title = element.dataset.pinned ? this._i18n.titleUnpin : this._i18n.titlePin;
+    this.title = element.dataset.pinned === "true" ? this._i18n.titleUnpin : this._i18n.titlePin;
   }
 
   toggle() {
