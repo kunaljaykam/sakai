@@ -458,16 +458,15 @@ a[href]:not(.btn):hover {
 
 :root.sakaiUserTheme-dark {
 
-  .site-list-item:hover .bi-pin {
-    color: white;
+  .site-list-item:hover, .site-list-item:focus {
+
+    .bi-pin {
+      color: white;
+    }
   }
 
   .bi-pin-fill {
     color: white;
-  }
-
-  .bi-pin-fill:hover {
-    color: black;
   }
 }
 
