@@ -17,6 +17,7 @@
       "mobilebar";
 }
 
+
 @include media-breakpoint-up(md) {
 
   .portal-container {
@@ -439,13 +440,33 @@ a[href]:not(.btn):hover {
   color: var(--sakai-pin-hover-color);
 }
 
+.bi-pin {
+  color: transparent;
+
+  /*&:hover {
+    color: var(--sakai-pin-hover-color);
+  }*/
+}
+
+.site-list-item:hover .bi-pin {
+  color: var(--sakai-pin-hover-color);
+}
+
+.bi-pin-fill {
+  color: var(--sakai-pin-hover-color);
+}
+
 :root.sakaiUserTheme-dark {
 
-  .bi-pin, .bi-pin-fill {
+  .site-list-item:hover .bi-pin {
     color: white;
   }
 
-  .bi-pin:hover, .bi-pin-fill:hover {
+  .bi-pin-fill {
+    color: white;
+  }
+
+  .bi-pin-fill:hover {
     color: black;
   }
 }
