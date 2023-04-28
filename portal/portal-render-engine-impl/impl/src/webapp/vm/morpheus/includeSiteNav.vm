@@ -154,7 +154,7 @@
     </nav>
 </aside>
 
-<div class="w-100 view-all-sites d-flex justify-space-between d-none d-md-flex">
+<div class="w-100 sticky-footer d-flex justify-space-between d-none d-md-flex">
     <button id="sakai-view-all-sites"
             type="button"
             class="btn btn-transparent py-3 d-block flex-fill"
