@@ -17,7 +17,6 @@
       "mobilebar";
 }
 
-
 @include media-breakpoint-up(md) {
 
   .portal-container {
@@ -323,8 +322,6 @@ a[href]:not(.btn):hover {
     --button-disabled-color: var(--site-nav-btn-disabled-color);
     --button-disabled-bg: var(--site-nav-btn-disabled-bg);
     --button-disabled-border-color: var(--site-nav-btn-disabled-border-color);
-    .site-list-item-head > & {
-    }
     .is-current-site .site-list-item-head > & {
       --button-color: (--site-nav-btn-current-color);
       --button-bg: var(--site-nav-btn-current-bg);
@@ -345,6 +342,10 @@ a[href]:not(.btn):hover {
 
   .site-list-item-head:hover {
     background-color: var(--site-nav-btn-hover-bg);
+
+    .bi-pin {
+      color: black;
+    }
   }
 
   .is-current-site > div > div > a {
