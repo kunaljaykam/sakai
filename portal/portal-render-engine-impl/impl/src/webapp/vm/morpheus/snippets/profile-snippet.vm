@@ -1,13 +1,13 @@
 #if (${userIsLoggedIn})
 <aside class="offcanvas offcanvas-end" tabindex="-1" id="sakai-accountPanel" aria-labelledby="sakai-accountPanelLabel">
   <div class="offcanvas-header">
-    <h2 class="offcanvas-title" id="sakai-accountPanelLabel">${rloader.mainnav_btn_account}</h2>
+    <h2 class="offcanvas-title m-0" id="sakai-accountPanelLabel">${rloader.mainnav_btn_account}</h2>
     <span>&nbsp;</span>
     <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close this account menu"></button>
   </div>
 
   <div class="offcanvas-body d-flex flex-column">
-    <div class="text-center border-bottom mb-3 pb-2">
+    <div class="text-center mb-3 pb-2">
       <div id="sakai-profile-image-block">
         <button class="btn only-icon" data-bs-toggle="modal" data-bs-target="#profile-image-upload">
           <img class="sakai-accountProfileImage rounded-circle" width="100" src="/direct/profile/${loginUserId}/image/thumb" alt="Profile image">
@@ -27,14 +27,14 @@
         #end
           #end
         #end
-        <li class="nav-item py-2 d-none"><button type="button" class="btn btn-primary">${rloader.sit_log}</button></li>
+        <li class="nav-item"><a href="${profileToolUrl}" class="nav-link">Tutorial</a></li>
         <li>
-          <div class="text-center border-top pt-3 mt-auto">
+          <div class="text-center pt-3 mt-auto">
             <fieldset class="btn-group" role="radiogroup" aria-label="Switch between light and dark themes">
               <button role="switch" aria-checked="false"
                   id="sakai-dark-theme-switcher" class="sakai-theme-switch Mrphs-userNav__submenuitem--themeSwitcher switch">
-                <span class="bi bi-sun"> ${rloader.sit_themeSwitcherOff}</span> ## Note: The space before the variable is intentional to ensure proper spacing in the rendered output
-                <span class="bi bi-moon"> ${rloader.sit_themeSwitcherOn}</span>
+                <span class="bi bi-sun"></span>
+                <span class="bi bi-moon"></span>
               </button>
             </fieldset>
           </div>
@@ -83,8 +83,8 @@
         </div>
       </div>
     </div>
-    <div class="text-center mt-2">
-      <a href="${loginLogInOutUrl}" title="${loginMessage}" id="loginLink1" class="btn btn-primary" data-warning="${logoutWarningMessage}">
+    <div class="text-center pt-3 mt-auto sticky-footer">
+      <a href="${loginLogInOutUrl}" title="${loginMessage}" id="loginLink1" class="bi bi-box-arrow-right btn btn-primary w-100" data-warning="${logoutWarningMessage}">
         <span class="Mrphs-login-Message">${loginMessage}</span>
       </a>
     </div>

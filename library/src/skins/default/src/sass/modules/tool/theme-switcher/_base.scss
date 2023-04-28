@@ -7,10 +7,10 @@
     border: 1px solid var(--sakai-border-color);
     font-weight: normal;
     padding: 0;
-    border-radius: inherit;
+    border-radius: 21px;
 
     span {
-        padding: 0 $standard-spacing;
+        padding: 0 11px;
         pointer-events: none;
     }
 }
@@ -18,7 +18,7 @@
 #sakai-dark-theme-switcher[role="switch"][aria-checked="false"] :first-child,
 #sakai-dark-theme-switcher[role="switch"][aria-checked="true"] :last-child {
     display: inline-block;
-    border-radius: $button-radius; 
+    border-radius: inherit; 
     background: var(--sakai-primary-color-1);
     color: var(--sakai-text-color-inverted);
 
