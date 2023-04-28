@@ -1,6 +1,6 @@
 <template id="site-list-item-template">
   <li class="site-list-item py-1">
-    <div class="site-list-item-head d-flex align-items-center pe-2">
+    <div class="site-list-item-head d-flex align-items-center pe-2 py-1 w-100 justify-content-between">
       <div class="site-link-block d-flex align-items-center rounded-end me-1 pe-2">
         <a class="text-break ms-3"></a>
       </div>
@@ -32,7 +32,7 @@
     #end
 
     <li id="site-list-item-${site.id}" class="site-list-item py-1 $!{currentSiteClass}" data-site="${site.id}">
-        <div class="site-list-item-head d-flex align-items-center pe-2">
+        <div class="site-list-item-head d-flex align-items-center pe-2 py-1 w-100 justify-content-between">
             <div class="site-link-block d-flex align-items-center rounded-end me-1 pe-2">
                 #if ($addPages)
                 <button class="btn icon-button border-0 #if (!$isCurrentSite)collapsed#end"
@@ -46,7 +46,7 @@
                 <a href="$site.url" class="text-break #if (!$isCurrentSite)ms-3#end">${site.title}</a>
             </div>
             #if ($loggedIn && !${site.isHome})
-                <button class="d-inline-block p-1 site-opt-pin btn btn-site-opt bi $!{pinIconClass}"
+                <button class="d-inline-block p-1 site-opt-pin btn btn-transparent bi $!{pinIconClass}"
                     data-pin-site="${site.id}"
                     data-pinned="$!{site.isPinned}"
                     title="${pinTitle}">
