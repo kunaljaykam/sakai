@@ -479,3 +479,9 @@ a[href]:not(.btn):hover {
     width: 100%;
   }
 }
+
+.view-all-sites {
+  position: sticky;
+  bottom: 0;
+  background-color: var(--sakai-background-color-2);
+}

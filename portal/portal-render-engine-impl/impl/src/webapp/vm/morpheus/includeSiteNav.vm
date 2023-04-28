@@ -141,7 +141,7 @@
                     #end
                 </ul>
             </div>
-            <div class="sites-section p-1 mt-auto">
+            <div class="sites-section p-1 mt-auto view-all-sites">
                 <button id="sakai-view-all-sites"
                         type="button"
                         class="btn btn-nav py-3 w-100 btn-site"
