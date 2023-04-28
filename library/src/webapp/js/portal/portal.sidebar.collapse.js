@@ -10,16 +10,6 @@ class SidebarCollapseButton {
     this.setCollapsed(newValue)
   }
 
-  get title() {
-    return this._element.getAttribute("title");
-  }
-
-  set title(newValue) {
-
-    this._element.setAttribute("title", newValue);
-    this._tooltip.setContent({'.tooltip-inner': newValue});
-  }
-
   constructor(element, config) {
 
     this._i18n = config?.i18n;
@@ -28,7 +18,6 @@ class SidebarCollapseButton {
     this._sitesSidebar = config?.sitesSidebar;
     this._element = element;
     this._element.addEventListener("click", this.toggle.bind(this));
-    this._tooltip = bootstrap.Tooltip.getOrCreateInstance(this._element);
   }
 
   toggle() {
