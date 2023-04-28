@@ -465,7 +465,6 @@ a[href]:not(.btn):hover {
     color: white;
   }
 
-
   .site-list-item-head:hover, .site-list-item-head:focus {
 
     .site-link-block {
@@ -495,4 +494,8 @@ a[href]:not(.btn):hover {
   position: sticky;
   bottom: 0;
   background-color: var(--sakai-background-color-2);
+
+  &:hover {
+    background-color: var(--site-nav-btn-hover-bg);
+  }
 }

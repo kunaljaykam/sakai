@@ -34,6 +34,9 @@ class SidebarCollapseButton {
   toggle() {
 
     this.collapsed = !this.collapsed;
+    const iconSpan = this._element.querySelector("span");
+    iconSpan.classList.remove("bi-chevron-double-left", "bi-chevron-double-right");
+    iconSpan.classList.add(`bi-chevron-double-${this.collapsed ? "right" : "left"}`);
     this._portalContainer.classList.toggle(this._toggleClass, this.collapsed);
     this._sitesSidebar.classList.toggle(this._toggleClass, this.collapsed);
     this.title = this.collapsed ? this._i18n.titleCollapsed : this._i18n.titleExpanded;

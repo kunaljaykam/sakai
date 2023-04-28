@@ -7,8 +7,8 @@
     sites: portal.container.querySelector("#portal-nav-sidebar")
   };
 
-  //Setup sidebar collapse button
-  new SidebarCollapseButton(portal.head.querySelector(".btn-sidebar-collapse"), {
+  //Setup sidebar collapse buttons
+  new SidebarCollapseButton(document.getElementById("sidebar-collapse-button"), {
     i18n: {
       titleExpanded: "${rloader.mainnav_btn_sidebar_collapse}",
       titleCollapsed: "${rloader.mainnav_btn_sidebar_expand}"
