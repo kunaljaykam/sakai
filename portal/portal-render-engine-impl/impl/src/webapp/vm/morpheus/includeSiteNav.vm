@@ -154,10 +154,10 @@
     </nav>
 </aside>
 
-<div class="w-100 sticky-footer d-flex justify-space-between d-none d-md-flex">
+<div class="sticky-footer #if (${sidebarCollapsed}) minimised #else w-100 #end d-flex justify-space-between d-none d-md-flex">
     <button id="sakai-view-all-sites"
             type="button"
-            class="btn btn-transparent py-3 d-block flex-fill"
+            class="btn btn-transparent py-3 d-block flex-fill #if (${sidebarCollapsed})d-none#end"
             data-bs-toggle="offcanvas"
             data-bs-target="#select-site-sidebar"
             aria-controls="select-site-sidebar"
@@ -172,7 +172,7 @@
     <button id="sidebar-collapse-button" class="btn btn-transparent d-block me-2"
             data-portal-sidebar-collapsed="$!{sidebarCollapsed}"
             title="${rloader.mainnav_btn_sidebar_collapse}">
-        <span class="bi bi-chevron-double-left" style="font-weight: bold; font-size: 22px;"></span>
+        <span class="bi bi-chevron-double-#if ($sidebarCollapsed)right#elseleft#end" style="font-weight: bold; font-size: 22px;"></span>
     </button>
 </div>
 
