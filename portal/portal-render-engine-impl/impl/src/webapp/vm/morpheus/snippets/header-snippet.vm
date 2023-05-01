@@ -19,8 +19,19 @@
       <a class="px-3" href="/portal" title="Home page">
         <img src="/library/skin/$!{pageSkin}/images/sakaiLogo.png" alt="Sakai logo">
       </a>
+      <button id="sidebar-collapse-button" class="btn btn-sidebar-collapse me-1 d-none d-md-block"
+          type="button"
+          data-portal-sidebar-collapsed="$!{sidebarCollapsed}"
+          data-bs-toggle="tooltip"
+          data-bs-placement="bottom"
+          title="${sidebarCollapseBtnTitle}"
+          aria-controls="portal-nav-sidebar">
+        <span class="bi bi-list" style="color: white; font-size: 28px;"></span>
+      </button>
     </div>
+    #if (${userIsLoggedIn})
     <div id="header-site-title" class="ms-2 d-none d-md-block">$!{siteTitle}</div>
+    #end
   </div>
 
   <a href="#" class="sak-sysInd-systemAlerts nav-link d-none align-items-center text-white me-auto" onclick="alert('Somehow we will get the dismissed PA System alert to re-appear');">

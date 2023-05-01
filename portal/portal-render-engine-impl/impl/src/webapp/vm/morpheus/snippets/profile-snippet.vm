@@ -33,8 +33,8 @@
             <fieldset class="btn-group" role="radiogroup" aria-label="Switch between light and dark themes">
               <button role="switch" aria-checked="false"
                   id="sakai-dark-theme-switcher" class="sakai-theme-switch Mrphs-userNav__submenuitem--themeSwitcher switch">
-                <span class="bi bi-sun"></span>
-                <span class="bi bi-moon"></span>
+                <span class="bi bi-sun" title="Light mode"></span>
+                <span class="bi bi-moon" title="Dark mode"></span>
               </button>
             </fieldset>
           </div>

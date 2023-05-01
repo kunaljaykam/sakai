@@ -23,17 +23,9 @@ class SidebarCollapseButton {
   toggle() {
 
     this.collapsed = !this.collapsed;
-
-    this._element.previousElementSibling.classList.toggle("d-none", this.collapsed);
-    this._element.parentElement.classList.toggle("minimised", this.collapsed);
-    this._element.parentElement.classList.toggle("w-100", !this.collapsed);
-
-    const iconSpan = this._element.querySelector("span");
-    iconSpan.classList.remove("bi-chevron-double-left", "bi-chevron-double-right");
-    iconSpan.classList.add(`bi-chevron-double-${this.collapsed ? "right" : "left"}`);
     this._portalContainer.classList.toggle(this._toggleClass, this.collapsed);
     this._sitesSidebar.classList.toggle(this._toggleClass, this.collapsed);
-    this.title = this.collapsed ? this._i18n.titleCollapsed : this._i18n.titleExpanded;
+    this._element.title = this.collapsed ? this._i18n.titleCollapsed : this._i18n.titleExpanded;
   }
 
   async setCollapsed(collapsed) {
