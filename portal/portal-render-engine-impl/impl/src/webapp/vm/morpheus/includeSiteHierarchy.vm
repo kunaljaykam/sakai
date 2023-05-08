@@ -1,8 +1,8 @@
-<nav class="sakai-pageNav" aria-label="${rloader.sit_toolsubnavigation}">
+<nav class="sakai-pageNav" aria-label="${rloader.sit_toolsubnavigation}" style="--bs-breadcrumb-divider: url(&#34;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M2.5 0L1 1.5 3.5 4 1 6.5 2.5 8l4-4-4-4z' fill='%236c757d'/%3E%3C/svg%3E&#34;);">
     <ol class="breadcrumb mb-2">
       <li class="breadcrumb-item" title="${rloader.sit_mywor}">
-          <a class="text-decoration-none" href="/portal">
-              <small>${rloader.sit_mywor}</small>
+          <a href="/portal">
+              <small class="bi bi-house-fill site-breadcrumb text-uppercase fw-bold">${rloader.sit_mywor}</small>
           </a>
       </li>
 
@@ -35,7 +35,7 @@
                         #if ( ( ${tabDisplayLabel} == 2 ) && ( ${pwd.shortDescription} ) )${pwd.shortDescription}#else${pwd.siteTitleTrunc}#end
                     </span></a>
                 </span>
-                <span class="Mrphs-hierarchy--separator-$tabCountBread Mrphs-hierarchy--separator"><i class="fa fa-lg fa-angle-right" aria-hidden="true"></i></span>
+                <span class="Mrphs-hierarchy--separator-$tabCountBread Mrphs-hierarchy--separator"><i class="bi bi-caret-right-fill" aria-hidden="true"></i></span>
 
             #end ## END of FOREACH ( $pwd in $portalPwd )
         </div>
@@ -46,7 +46,7 @@
             <a href="${pwd.siteUrl}" title="${pwd.siteTitle}" class="Mrphs-breadCrumbs--link"><span class="Mrphs-breadCrumbs--title">
                 #if ( ( ${tabDisplayLabel} == 2 ) && ( ${pwd.shortDescription} ) )${pwd.shortDescription}#else${pwd.siteTitleTrunc}#end
             </span></a>
-            <span class="Mrphs-hierarchy--separator-$tabCountBread Mrphs-hierarchy--separator"><i class="fa fa-lg fa-angle-right"></i></span>
+            <span class="Mrphs-hierarchy--separator-$tabCountBread Mrphs-hierarchy--separator"><i class="bi bi-caret-right-fill"></i></span>
 
         #end ## END of FOREACH ( $pwd in $portalBreadCrumbs )
 
@@ -56,8 +56,8 @@
     #foreach( $page in $sitePages.pageNavTools )
         #if ( ( $index == 0 ) && ! ${isUserSite} )
             <li class="Mrphs-hierarchy--siteName breadcrumb-item" title="${siteTitle}">
-                <a class="text-decoration-none" href="${page.pageResetUrl}">
-                    <small>${siteTitleTruncated}</small>
+                <a href="${page.pageResetUrl}">
+                    <small class="site-breadcrumb text-uppercase fw-bold">${siteTitle}</small>
                 </a>
             </li>
         #end
@@ -104,7 +104,7 @@
         #if (${page.current})
             <li class="breadcrumb-item">
                 <a href="${page.pageResetUrl}" title="$rloader.sit_reset" class="Mrphs-hierarchy-item Mrphs-hierarchy--toolName text-decoration-none">
-                    <small class="Mrphs-breadcrumb--toolNameText">${page.pageTitle}</small>
+                    <small class="Mrphs-breadcrumb--toolNameText site-breadcrumb text-muted text-uppercase fw-bold">${page.pageTitle}</small>
                 </a>
             </li>
 #* TODO: decide - Trinity chopping block

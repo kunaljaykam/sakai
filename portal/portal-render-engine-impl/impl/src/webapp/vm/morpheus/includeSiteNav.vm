@@ -113,15 +113,14 @@
         #if (${userIsLoggedIn})
             #if ($sidebarSites.currentSite)
                 <div class="sites-section">
-                    <h3 class="sites-section-heading sites-section-heading-current">${rloader.sitenav_title_current}</h3>
-                    <ul class="mb-0 list-unstyled">
+                    <ul class="mb-0 list-unstyled fs-6 fw-bold">
                         #siteListItem("current", $sidebarSites.currentSite, false, true)
                     </ul>
                 </div>
             #end
-            #if ($sidebarSites.pinnedSites)
-                <div class="sites-section">
-                    <h3 class="sites-section-heading">${rloader.sitenav_title_pinned}</h3>
+            <div class="sites-section">
+                <h3 class="fs-6 fw-bold mx-4"><i class="si si-tilted-pin m-1"></i>${rloader.sitenav_title_pinned}</h3>
+                #if ($sidebarSites.pinnedSites && $sidebarSites.pinnedSites.size() > 0)
                     <ul class="mb-0 list-unstyled">
                         #foreach ( $site in $sidebarSites.pinnedSites)
                             #if ($site.id != $currentSiteId)
@@ -129,11 +128,13 @@
                             #end
                         #end
                     </ul>
-                </div>
-            #end
-            #if ($sidebarSites.recentSites)
+                #else
+                    <p class="fs-6 text-muted mx-3">No pinned sites yet</p>
+                #end
+            </div>
+            #if ($sidebarSites.recentSites && $sidebarSites.recentSites.size() > 0)
                 <div class="sites-section">
-                    <h3 class="sites-section-heading">${rloader.sitenav_title_recent}</h3>
+                    <h3 class="fs-6 fw-bold mx-4"><i class="bi bi-clock-fill m-1"></i>${rloader.sitenav_title_recent}</h3>
                     <ul class="mb-0 list-unstyled">
                         #foreach ( $site in $sidebarSites.recentSites)
                             #if ($site.id != $currentSiteId)

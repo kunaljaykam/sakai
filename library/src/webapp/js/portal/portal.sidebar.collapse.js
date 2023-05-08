@@ -29,6 +29,11 @@ class SidebarCollapseButton {
     this._element = element;
     this._element.addEventListener("click", this.toggle.bind(this));
     this._tooltip = bootstrap.Tooltip.getOrCreateInstance(this._element);
+  
+    // Add event listener for DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', () => {
+      this.setCollapsed(this.collapsed);
+    });
   }
 
   toggle() {
@@ -41,10 +46,18 @@ class SidebarCollapseButton {
 
   async setCollapsed(collapsed) {
 
+    // Get site-breadcrumb element
+    const siteBreadcrumbs = document.querySelectorAll('.site-breadcrumb');
+
     collapsed = collapsed ? "true" : "false";
     const putReq = await fetch(`/direct/userPrefs/updateKey/${portal.user.id}/sakai:portal:sitenav?toolsCollapsed=${collapsed}`, { method: "PUT" });
     if (!putReq.ok) {
       console.error(`Could not set collapsed state "${collapsed}" for sidebar.`);
     }
+
+    // Toggle the fs-5 class for all site-breadcrumb elements based on the collapsed state
+    siteBreadcrumbs.forEach(siteBreadcrumb => {
+      siteBreadcrumb.classList.toggle('fs-5', collapsed === "true");
+    });
   }
 }
