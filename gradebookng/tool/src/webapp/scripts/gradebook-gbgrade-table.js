@@ -758,35 +758,99 @@ GbGradeTable.renderTable = function (elementId, tableData) {
 
   // Testing Tablutar
 
-  //define some sample data
-  var tabultorTestData = [
-    {id:1, name:"Oli Bob", age:"12", col:"red", dob:""},
-    {id:2, name:"Mary May", age:"1", col:"blue", dob:"14/05/1982"},
-    {id:3, name:"Christine Lobowski", age:"42", col:"green", dob:"22/05/1982"},
-    {id:4, name:"Brendon Philips", age:"125", col:"orange", dob:"01/08/1980"},
-    {id:5, name:"Margret Marmajuke", age:"16", col:"yellow", dob:"31/01/1999"},
-  ];
+  // //define some sample data
+  // var tabultorTestData = [
+  //   {id:1, name:"Oli Bob", age:"12", col:"red", dob:""},
+  //   {id:2, name:"Mary May", age:"1", col:"blue", dob:"14/05/1982"},
+  //   {id:3, name:"Christine Lobowski", age:"42", col:"green", dob:"22/05/1982"},
+  //   {id:4, name:"Brendon Philips", age:"125", col:"orange", dob:"01/08/1980"},
+  //   {id:5, name:"Margret Marmajuke", age:"16", col:"yellow", dob:"31/01/1999"},
+  // ];
   
   
-  //create Tabulator on DOM element with id "example-table"
-  var t_table = new Tabulator("#tabulator-example-table", {
-    height:205, // set height of table (in CSS or here), this enables the Virtual DOM and improves render speed dramatically (can be any valid css height value)
-    data:tabultorTestData, //assign data to table
-    layout:"fitColumns", //fit columns to width of table (optional)
-    columns:[ //Define Table Columns
-      {title:"Name", field:"name", width:150},
-      {title:"Age", field:"age", hozAlign:"left", formatter:"progress"},
-      {title:"Favourite Color", field:"col"},
-      {title:"Date Of Birth", field:"dob", sorter:"date", hozAlign:"center"},
-    ],
+  // //create Tabulator on DOM element with id "example-table"
+  // var t_table = new Tabulator("#tabulator-example-table", {
+  //   height:205, // set height of table (in CSS or here), this enables the Virtual DOM and improves render speed dramatically (can be any valid css height value)
+  //   data:tabultorTestData, //assign data to table
+  //   layout:"fitColumns", //fit columns to width of table (optional)
+  //   columns:[ //Define Table Columns
+  //     {title:"Name", field:"name", width:150},
+  //     {title:"Age", field:"age", hozAlign:"left", formatter:"progress"},
+  //     {title:"Favourite Color", field:"col"},
+  //     {title:"Date Of Birth", field:"dob", sorter:"date", hozAlign:"center"},
+  //   ],
   
+  // });
+  
+  // //trigger an alert message when the row is clicked
+  // t_table.on("rowClick", function(e, row){ 
+  //  alert("Row " + row.getData().id + " Clicked!!!!");
+  // });
+
+
+  // Student Data Table Setup
+
+function gradeFormatter(cell, formatterParams) {
+  var value = cell.getValue();
+  return `${value}/100`; 
+}
+
+// Custom editor for handling input within the range 0-100
+function gradeEditor(cell, onRendered, success, cancel) {
+   var input = document.createElement("input");
+  input.setAttribute("type", "number");
+  input.setAttribute("min", "0");
+  input.setAttribute("max", "100");
+  input.style.width = "100%";
+  input.value = cell.getValue();
+
+  onRendered(function() {
+      input.focus();
+      input.style.height = "100%";
   });
-  
-  //trigger an alert message when the row is clicked
-  t_table.on("rowClick", function(e, row){ 
-   alert("Row " + row.getData().id + " Clicked!!!!");
+
+  function onChange() {
+      if (input.value < 0 || input.value > 100) {
+          alert("Grade must be between 0 and 100");
+          cancel();
+      } else {
+          success(input.value);
+      }
+  }
+
+  // Save the value when focus is lost or enter is pressed
+  input.addEventListener("blur", onChange);
+  input.addEventListener("keydown", function(e) {
+      if (e.keyCode == 13) {
+          onChange();
+      } else if (e.keyCode == 27) {
+          cancel();
+      }
   });
-  
+
+  return input;
+}
+
+// Sample data for the Tabulator
+var tabledata = [
+  {id:1, studentName:"Jane Doe", studentNumber:"1234", course:"Mathematics", grade:85},
+  {id:2, studentName:"John Smith", studentNumber:"5678", course:"Physics", grade:90},
+  {id:3, studentName:"Alice Johnson", studentNumber:"9101", course:"Chemistry", grade:75},
+];
+
+// Create the Tabulator instance
+var t_table = new Tabulator("#tabulator-example-table", {
+  height: 205, // set height of table to enable Virtual DOM
+  data: tabledata, // assign data to table
+  layout:"fitColumns", // fit columns to width of table
+  columns:[ // Define table columns
+      {title:"Student Name", field:"studentName", width:150},
+      {title:"Student Number", field:"studentNumber"},
+      {title:"Course", field:"course"},
+      {title:"Grade", field:"grade", formatter:gradeFormatter, editor:gradeEditor},
+  ],
+});
+
 // Testing Tabulator
 
 
