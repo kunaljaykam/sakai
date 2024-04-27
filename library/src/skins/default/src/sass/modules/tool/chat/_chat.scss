@@ -350,10 +350,10 @@
 		  &--icon{
 		 	@extend .fa;
 			&.icon-sakai-close			{	@extend .fa-times}
-			&.icon-sakai-chat  			{	@extend .fa-comments-o}
+			&.icon-sakai-chat  			{	@extend .fa-comments}
 			&.icon-sakai-users 			{	@extend .fa-users}
 			&.icon-sakai-online			{	@extend .fa-circle}
-			&.icon-sakai-offline		{	@extend .fa-circle-o}
+			&.icon-sakai-offline		{	@extend .fa-circle}
 			&.icon-sakai-videocam		{	@extend .fa-video-camera}
 			&.icon-sakai-mic			{	@extend .fa-microphone}
 			&.icon-sakai-bell			{	@extend .fa-bell}
@@ -364,7 +364,7 @@
 			&.icon-sakai-thumbup		{	@extend .fa-thumbs-up}
 			&.icon-sakai-thumbdown		{	@extend .fa-thumbs-down}
 			&.icon-sakai-flagcheckered	{	@extend	.fa-flag-checkered}
-			&.icon-sakai-frown			{	@extend	.fa-frown-o}
+			&.icon-sakai-frown			{	@extend	.fa-frown}
 		  }
 	}
 	.#{$namespace}presence {

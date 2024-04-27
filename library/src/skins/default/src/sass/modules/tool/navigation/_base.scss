@@ -478,7 +478,7 @@ body.is-logged-out{
 				margin-right: -#{$sites-nav-menu-item-border-thickness}; 					// to overlap the right border with the site title's border, so border thickness will remain 1px and hover will still work				
 
 				&.non-fav {
-					@extend .fa-star-o;
+					@extend .fa-star;
 					@extend .fa;
 				}
 			}

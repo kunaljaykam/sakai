@@ -163,11 +163,11 @@
 	}
 
 	.picture {
-		@extend .fa-picture-o;
+		@extend .fa-image;
 	}
 
 	.pictures {
-		@extend .fa-picture-o;
+		@extend .fa-image;
 	}
 
 	.picture-add {
@@ -225,11 +225,11 @@
 	}
 
 	.twitter {
-		@extend .fa-twitter;
+		@extend .bi-twitter;
 	}
 
 	.email-link {
-		@extend .fa-envelope-o;
+		@extend .fa-envelope;
 	}
 
 	.website-link {

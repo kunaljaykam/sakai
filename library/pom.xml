@@ -16,7 +16,7 @@
 		<!-- This is used in re-write rules as well -->
 		<ckeditor.version>4.22.1</ckeditor.version>
 		<bootstrap-version>5.2.0</bootstrap-version>
-		<font-awesome-version>4.7.0</font-awesome-version>
+		<font-awesome-version>6.5.2</font-awesome-version>
 		<node-version>v16.8.0</node-version>
 		<npm-version>6.14.15</npm-version>
 		<!-- Default extra plugins enabled -->
@@ -219,8 +219,8 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>fontawesome</artifactId>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>fortawesome__fontawesome-free</artifactId>
 			<version>${font-awesome-version}</version>
 			<scope>runtime</scope>
 		</dependency>
