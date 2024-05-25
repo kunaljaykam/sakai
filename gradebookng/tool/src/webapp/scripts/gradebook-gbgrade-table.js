@@ -756,102 +756,6 @@ GbGradeTable.renderTable = function (elementId, tableData) {
     $(this.TEXTAREA_PARENT).append(outOf);
   };
 
-  // Testing Tablutar
-
-  // //define some sample data
-  // var tabultorTestData = [
-  //   {id:1, name:"Oli Bob", age:"12", col:"red", dob:""},
-  //   {id:2, name:"Mary May", age:"1", col:"blue", dob:"14/05/1982"},
-  //   {id:3, name:"Christine Lobowski", age:"42", col:"green", dob:"22/05/1982"},
-  //   {id:4, name:"Brendon Philips", age:"125", col:"orange", dob:"01/08/1980"},
-  //   {id:5, name:"Margret Marmajuke", age:"16", col:"yellow", dob:"31/01/1999"},
-  // ];
-  
-  
-  // //create Tabulator on DOM element with id "example-table"
-  // var t_table = new Tabulator("#tabulator-example-table", {
-  //   height:205, // set height of table (in CSS or here), this enables the Virtual DOM and improves render speed dramatically (can be any valid css height value)
-  //   data:tabultorTestData, //assign data to table
-  //   layout:"fitColumns", //fit columns to width of table (optional)
-  //   columns:[ //Define Table Columns
-  //     {title:"Name", field:"name", width:150},
-  //     {title:"Age", field:"age", hozAlign:"left", formatter:"progress"},
-  //     {title:"Favourite Color", field:"col"},
-  //     {title:"Date Of Birth", field:"dob", sorter:"date", hozAlign:"center"},
-  //   ],
-  
-  // });
-  
-  // //trigger an alert message when the row is clicked
-  // t_table.on("rowClick", function(e, row){ 
-  //  alert("Row " + row.getData().id + " Clicked!!!!");
-  // });
-
-
-  // Student Data Table Setup
-
-function gradeFormatter(cell, formatterParams) {
-  var value = cell.getValue();
-  return `${value}/100`; 
-}
-
-// Custom editor for handling input within the range 0-100
-function gradeEditor(cell, onRendered, success, cancel) {
-   var input = document.createElement("input");
-  input.setAttribute("type", "number");
-  input.setAttribute("min", "0");
-  input.setAttribute("max", "100");
-  input.style.width = "100%";
-  input.value = cell.getValue();
-
-  onRendered(function() {
-      input.focus();
-      input.style.height = "100%";
-  });
-
-  function onChange() {
-      if (input.value < 0 || input.value > 100) {
-          alert("Grade must be between 0 and 100");
-          cancel();
-      } else {
-          success(input.value);
-      }
-  }
-
-  // Save the value when focus is lost or enter is pressed
-  input.addEventListener("blur", onChange);
-  input.addEventListener("keydown", function(e) {
-      if (e.keyCode == 13) {
-          onChange();
-      } else if (e.keyCode == 27) {
-          cancel();
-      }
-  });
-
-  return input;
-}
-
-// Sample data for the Tabulator
-var tabledata = [
-  {id:1, studentName:"Jane Doe", studentNumber:"1234", course:"Mathematics", grade:85},
-  {id:2, studentName:"John Smith", studentNumber:"5678", course:"Physics", grade:90},
-  {id:3, studentName:"Alice Johnson", studentNumber:"9101", course:"Chemistry", grade:75},
-];
-
-// Create the Tabulator instance
-var t_table = new Tabulator("#tabulator-example-table", {
-  height: 205, // set height of table to enable Virtual DOM
-  data: tabledata, // assign data to table
-  layout:"fitColumns", // fit columns to width of table
-  columns:[ // Define table columns
-      {title:"Student Name", field:"studentName", width:150},
-      {title:"Student Number", field:"studentNumber"},
-      {title:"Course", field:"course"},
-      {title:"Grade", field:"grade", formatter:gradeFormatter, editor:gradeEditor},
-  ],
-});
-
-// Testing Tabulator
 
 
   GbGradeTableEditor.prototype.beginEditing = function() {
@@ -896,19 +800,42 @@ var t_table = new Tabulator("#tabulator-example-table", {
     var scrollbarWidth = GbGradeTable.students.length > 0 ? 16 : 0;
     return GbGradeTable.getColumnWidths().reduce(function (acc, cur) { return acc + cur; }, 0) + scrollbarWidth;
   };
+  // console.log(`here we are: ${GbGradeTable.getFilteredColumn()}`);
+// Debugging Tabulator instance creation
+console.log(`the element id:: ${elementId}`);
+GbGradeTable.instance = new Tabulator("#" + elementId, {
+  data: GbGradeTable.getFilteredData(),
 
-  GbGradeTable.instance = new Handsontable(document.getElementById(elementId), {
-    data: GbGradeTable.getFilteredData(),
-    fixedColumnsLeft:  MorpheusViewportHelper.isPhone() ? 0 : GbGradeTable.FIXED_COLUMN_OFFSET,
-    colHeaders: true,
-    columns: GbGradeTable.getFilteredColumns(),
-    colWidths: GbGradeTable.getColumnWidths(),
-    autoRowSize: true,
-    autoColSize: false,
-    manualColumnResize: allowColumnResizing,
+  fixedColumnsLeft: MorpheusViewportHelper.isPhone() ? 0 : GbGradeTable.FIXED_COLUMN_OFFSET,
+  colHeaders: true,
+
+  // Log columns and column widths before initializing Tabulator
+  columns: (function() {
+    const cols = GbGradeTable.getFilteredColumns();
+    console.log(`Columns for Tabulator: ${JSON.stringify(cols)}`);
+    return cols;
+  })(),
+
+  colWidths: (function() {
+    const widths = GbGradeTable.getColumnWidths();
+    console.log(`Column widths for Tabulator: ${JSON.stringify(widths)}`);
+    return widths;
+  })(),
+
+  resizableRows: true,
+  resizableRowGuide: true,
+  resizableColumnGuide: true,
+  columnDefaults: {
+    resizable: true,
+  },
+
+
+
     height: GbGradeTable.calculateIdealHeight(),
     width: GbGradeTable.calculateIdealWidth(),
     fillHandle: false,
+    layout: "fitColumns",  // responsive layout
+    autoColumns: true,
     afterGetRowHeader: function(row,th) {
       $(th).
         attr("role", "rowheader").
@@ -1864,26 +1791,90 @@ GbGradeTable.getFixedColumns = function() {
 };
 
 
-GbGradeTable.getFilteredColumns = function() {
-  return GbGradeTable.getFixedColumns().concat(GbGradeTable.columns.filter(function(col) {
-    return !col.hidden;
-  }).map(function (column) {
-    if (column.type === 'category') {
-      return {
-        renderer: GbGradeTable.cellRenderer,
-        editor: false,
-        _data_: column
-      };
-    } else {
-      var readonly = column.externallyMaintained;
+// GbGradeTable.getFilteredColumns = function() {
+//   console.log("Entering getFilteredColumns function");
 
-      return {
-        renderer: GbGradeTable.cellRenderer,
-        editor: readonly ? false : GbGradeTableEditor,
-        _data_: column
+//   // Log the result of getFixedColumns
+//   const fixedColumns = GbGradeTable.getFixedColumns();
+//   console.log(`Fixed columns: ${JSON.stringify(fixedColumns)}`);
+
+//   // Log the columns before filtering
+//   console.log(`All columns before filtering: ${JSON.stringify(GbGradeTable.columns)}`);
+
+//   // Perform the concatenation and filtering
+//   const filteredColumns = GbGradeTable.getFixedColumns().concat(
+//     GbGradeTable.columns.filter(function(col) {
+//       console.log(`Filtering column: ${JSON.stringify(col)}`);
+//       return !col.hidden;
+//     }).map(function(column) {
+//       console.log(`Mapping column: ${JSON.stringify(column)}`);
+
+//       if (column.type === 'category') {
+//         console.log(`Column is of type category: ${JSON.stringify(column)}`);
+//         return {
+//           renderer: GbGradeTable.cellRenderer,
+//           editor: false,
+//           _data_: column,
+//         };
+//       } else {
+//         var readonly = column.externallyMaintained;
+//         console.log(`Column is of other type, readonly: ${readonly}, column: ${JSON.stringify(column)}`);
+
+//         return {
+//           renderer: GbGradeTable.cellRenderer,
+//           editor: readonly ? false : GbGradeTableEditor,
+//           _data_: column,
+//         };
+//       }
+//     })
+//   );
+
+//   // Log the final result
+//   console.log(`Filtered columns: ${JSON.stringify(filteredColumns)}`);
+  
+//   return filteredColumns;
+// };
+
+
+GbGradeTable.getFilteredColumns = function() {
+  console.log("Entering getFilteredColumns function");
+
+  const fixedColumns = GbGradeTable.getFixedColumns();
+  console.log(`Fixed columns: ${JSON.stringify(fixedColumns)}`);
+
+  console.log(`All columns before filtering: ${JSON.stringify(GbGradeTable.columns)}`);
+
+  const filteredColumns = GbGradeTable.getFixedColumns().concat(
+    GbGradeTable.columns.filter(function(col) {
+      console.log(`Filtering column: ${JSON.stringify(col)}`);
+      return !col.hidden;
+    }).map(function(column) {
+      console.log(`Mapping column: ${JSON.stringify(column)}`);
+
+      let tabulatorColumn = {
+        title: column.title || "Column",
+        field: column.field || "unknown",
+        hozAlign: column.hozAlign || "left",
+        editor: column.editor || false,
+        formatter: column.formatter || null,
+        width: column.width || null,
+        resizable: column.resizable !== undefined ? column.resizable : true
       };
-    }
-  }));
+
+      if (column.type === 'category') {
+        tabulatorColumn.editor = false;
+      } else {
+        var readonly = column.externallyMaintained;
+        tabulatorColumn.editor = readonly ? false : GbGradeTableEditor;
+      }
+
+      console.log(`Tabulator column: ${JSON.stringify(tabulatorColumn)}`);
+      return tabulatorColumn;
+    })
+  );
+
+  console.log(`Filtered columns: ${JSON.stringify(filteredColumns)}`);
+  return filteredColumns;
 };
 
 GbGradeTable.getFilteredColHeaders = function() {
@@ -1896,6 +1887,7 @@ GbGradeTable.getFilteredData = function() {
   var data = GbGradeTable.grades.slice(0);
 
   data = GbGradeTable.applyStudentFilter(data);
+  // console.log(data);
   data = GbGradeTable.applyColumnFilter(data);
 
   return data;
