@@ -702,6 +702,40 @@ GbGradeTable.studentCellRenderer = function(instance, td, row, col, prop, value,
 }
 
 
+GbGradeTable.tbrStudentCellRenderer = function(cell, formatterParams, onRendered) {
+  var value = cell.getValue();
+  var td = cell.getElement();
+
+  if (value === null) {
+    return;
+  }
+
+  var $td = $(td);
+
+  $td.attr("scope", "row").attr("role", "rowHeader");
+
+  var cellKey = (cell.getRow().getIndex() + '_' + cell.getColumn().getField());
+
+  var data = $.extend({
+    settings: GbGradeTable.settings
+  }, value);
+
+  var html = GbGradeTable.templates.studentCell.setHTML(td, data);
+
+  $.data(td, 'cell-initialised', cellKey);
+  $.data(td, "studentid", value.userId);
+  $.data(td, "metadata", {
+    id: cellKey,
+    student: value
+  });
+
+  $td.removeAttr('aria-describedby');
+
+  // Assuming that `GbGradeTable.templates.studentCell.setHTML` returns a string
+  return html;
+}
+
+
 GbGradeTable.mergeColumns = function (data, fixedColumns) {
   var result = [];
 
@@ -807,7 +841,8 @@ GbGradeTable.tbrFixedColumns = [
     },
     field: "studentname",
     formatter: function(cell, formatterParams, onRendered) {
-      return GbGradeTable.studentCellRenderer(cell.getValue(), cell.getRow().getData());
+      return GbGradeTable.tbrStudentCellRenderer(cell, formatterParams, onRendered);
+
     },
     editor: false,
     width: 220,
