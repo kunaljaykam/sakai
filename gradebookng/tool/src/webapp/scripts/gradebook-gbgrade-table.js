@@ -232,56 +232,96 @@ $(document).ready(function() {
 
 
 
-$(document).ready(function() {
-  // need TrimPath to load before parsing templates
-  GbGradeTable.tbrTemplates = {
-    cell: new TrimPathFragmentCache('cell', TrimPath.parseTemplate(
-        $("#cellTemplate").html().trim().toString())),
-    courseGradeCell: new TrimPathFragmentCache('courseGradeCell',TrimPath.parseTemplate(
-        $("#courseGradeCellTemplate").html().trim().toString())),
-    courseGradeHeader: TrimPath.parseTemplate(
-        $("#courseGradeHeaderTemplate").html().trim().toString()),
-    assignmentHeader: TrimPath.parseTemplate(
-        $("#assignmentHeaderTemplate").html().trim().toString()),
-    categoryScoreHeader: TrimPath.parseTemplate(
-        $("#categoryScoreHeaderTemplate").html().trim().toString()),
-    studentHeader: (function() {
-      var templateContent = $("#studentHeaderTemplate").html().trim().toString();
-      var parsedTemplate = TrimPath.parseTemplate(templateContent);
-      return parsedTemplate;
-    })(),
-    studentNumberHeader: (function() {
-        var templateContent = $("#studentNumberHeaderTemplate").html().trim().toString();
-        return TrimPath.parseTemplate(templateContent);
-    })(),
-    studentCell: new TrimPathFragmentCache('studentCell', TrimPath.parseTemplate(
-        $("#studentCellTemplate").html().trim().toString())),
-    metadata: TrimPath.parseTemplate(
-        $("#metadataTemplate").html().trim().toString()),
-    studentSummary: TrimPath.parseTemplate(
-        $("#studentSummaryTemplate").html().trim().toString()),
-    gradeItemSummary: TrimPath.parseTemplate(
-        $("#gradeItemSummaryTemplate").html().trim().toString()),
-    gradeItemSummaryTooltip: TrimPath.parseTemplate(
-        $("#gradeItemSummaryTooltipTemplate").html().trim().toString()),
-    caption: TrimPath.parseTemplate(
-        $("#captionTemplate").html().trim().toString()),
-    tooltip: TrimPath.parseTemplate(
-        $("#tooltipTemplate").html().trim().toString()),
-    gradeMenuTooltip: TrimPath.parseTemplate(
-       $("#gradeMenuTooltip").html().trim().toString()),
-    gradeHeaderMenuTooltip: TrimPath.parseTemplate(
-       $("#gradeHeaderMenuTooltip").html().trim().toString()),
-    newGradeItemPopoverTitle: TrimPath.parseTemplate(
-       $("#newGradeItemPopoverTitle").html().trim().toString()),
-    newGradeItemPopoverMessage: TrimPath.parseTemplate(
-       $("#newGradeItemPopoverMessage").html().trim().toString()),
-  };
-
-  // Log to verify
-});
 
 
+
+
+GbGradeTable.tbrcourseGradeRenderer = function(cell, formatterParams, onRendered) {
+  var value = cell.getValue();
+  var td = cell.getElement();
+  var row = cell.getRow().getPosition();
+  var col = cell.getColumn().getPosition();
+
+  var $td = $(td);
+  var scoreState = GbGradeTable.getCellState(row, col, cell.getTable());
+  var student = cell.getData();
+  var cellKey = GbGradeTable.cleanKey([row, col, scoreState, student.hasCourseGradeComment, value.join('_')].join('_'));
+  var wasInitialised = $.data(td, 'cell-initialised');
+
+  if (wasInitialised === cellKey) {
+      return "";
+  }
+
+  var isOverridden = value[2] == "1";
+
+  if (!wasInitialised) {
+      GbGradeTable.tbrTemplates.courseGradeCell.setHTML(td, {
+          value: value[0],
+          isOverridden: isOverridden
+      });
+  } else if (wasInitialised != cellKey) {
+      var valueCell = td.getElementsByClassName('gb-value')[0];
+      GbGradeTable.replaceContents(valueCell, document.createTextNode(value[0]));
+      if (isOverridden) {
+          valueCell.classList.add('gb-overridden');
+      } else {
+          valueCell.classList.remove('gb-overridden');
+      }
+  }
+
+  $.data(td, 'studentid', student.userId);
+  $.data(td, "courseGradeId", GbGradeTable.courseGradeId);
+  $.data(td, "gradebookId", GbGradeTable.gradebookId);
+  $.data(td, 'cell-initialised', cellKey);
+  $.data(td, "metadata", {
+      id: cellKey,
+      student: student,
+      courseGrade: value[0]
+  });
+  $td.removeAttr('aria-describedby');
+
+  var $cellDiv = $(td.getElementsByClassName('relative')[0]);
+  if (scoreState == "synced") {
+      $cellDiv.addClass("gb-just-synced");
+
+      setTimeout(function() {
+          GbGradeTable.clearCellState(row, col);
+          $cellDiv.removeClass("gb-just-synced", 2000);
+      }, 2000);
+  }
+
+  // collect all the notification
+  var notifications = [];
+  // comment notification
+  var commentNotification = td.getElementsByClassName("gb-course-comment-notification")[0];
+  if (commentNotification) {
+      if (student.hasCourseGradeComment == 1) {
+          commentNotification.style.display = 'block';
+          notifications.push({
+              type: 'comment',
+              comment: "..."
+          });
+      } else {
+          commentNotification.style.display = 'none';
+      }
+  }
+
+  // make metadata, including the notifications array in it
+  $.data(td, "metadata", {
+      id: cellKey,
+      student: student,
+      courseGrade: value[0],
+      hasCourseGradeComment: student.hasCourseGradeComment,
+      courseGradeId: GbGradeTable.courseGradeId,
+      gradebookId: GbGradeTable.gradebookId,
+      notifications: notifications,
+      readonly: false
+  });
+
+  $.data(td, 'cell-initialised', cellKey);
+
+  return $td.html(); // Return the inner HTML of the cell element
+};
 
 GbGradeTable.courseGradeRenderer = function (instance, td, row, col, prop, value, cellProperties) {
 
@@ -641,6 +681,263 @@ GbGradeTable.cellRenderer = function (instance, td, row, col, prop, value, cellP
   $.data(td, 'cell-initialised', cellKey);
 };
 
+
+
+GbGradeTable.tbrcellRenderer = function(cell, formatterParams, onRendered) {
+
+  console.log("its working");
+  var value = cell.getValue();
+  var td = cell.getElement();
+  var row = cell.getRow().getPosition();
+  var col = cell.getColumn().getPosition();
+
+  // If col is not rendered, skip cell renderer
+  if (!GbGradeTable.isColumnRendered(cell.getTable(), col)) return "";
+
+  var $td = $(td);
+  var index = col - GbGradeTable.FIXED_COLUMN_OFFSET;
+  var student = cell.getData();
+
+  var column = cell.getColumn().getDefinition()._data_;
+
+  // key needs to contain all values the cell requires for render
+  // otherwise it won't rerender when those values change
+  var hasComment = column.type === "assignment" ? GbGradeTable.hasComment(student, column.assignmentId) : false;
+  var isDropped = column.type === "assignment" ? GbGradeTable.hasDropped(student, column.assignmentId) : false;
+  var scoreState = GbGradeTable.getCellState(row, col, cell.getTable());
+  var isReadOnly = column.type === "assignment" ? GbGradeTable.isReadOnly(student, column.assignmentId) : false;
+  var hasConcurrentEdit = column.type === "assignment" ? GbGradeTable.hasConcurrentEdit(student, column.assignmentId) : false;
+  var hasAssociatedRubric = column.type === "assignment" ? column.hasAssociatedRubric : false;
+  const isExternallyMaintained = column.externallyMaintained ? column.externallyMaintained : false;
+  var hasExcuse = column.type === "assignment" ? GbGradeTable.hasExcuse(student, column.assignmentId) : false;
+  var keyValues = [row, index, value, student.eid, hasComment, isReadOnly, hasConcurrentEdit, column.type, scoreState, isDropped, hasExcuse];
+  var cellKey = GbGradeTable.cleanKey(keyValues.join("_"));
+
+  var wasInitialised = $.data(td, 'cell-initialised');
+
+  if (!GbGradeTable.forceRedraw && wasInitialised === cellKey) {
+      // Nothing to do
+      return "";
+  }
+
+  var student = cell.getData();
+
+  var valueCell;
+
+  if (!wasInitialised || td.getAttribute('scope') == 'row') {
+      // First time we've initialised this cell.
+      // Or we're replacing the student name cell
+      GbGradeTable.tbrTemplates.cell.setHTML(td, { value: value });
+
+      if (td.hasAttribute('scope')) {
+          td.removeAttribute('scope');
+          td.removeAttribute('role');
+      }
+  } else if (wasInitialised != cellKey) {
+      valueCell = td.getElementsByClassName('gb-value')[0];
+
+      // This cell was previously holding a different value.  Just patch it.
+      GbGradeTable.replaceContents(valueCell, document.createTextNode(value));
+  }
+
+  const gradeRubricClass = "gb-grade-rubric-li";
+  const gradeRubricListItem = td.getElementsByClassName(gradeRubricClass)[0];
+  gradeRubricListItem?.setAttribute("class", (!hasAssociatedRubric || isExternallyMaintained) ? `${gradeRubricClass} d-none` : gradeRubricClass);
+
+  var $gradeRubricOption = $(td).find(".gb-grade-rubric").parent();
+  if (hasAssociatedRubric) {
+      $gradeRubricOption.removeClass("invisible");
+  } else {
+      $gradeRubricOption.addClass("invisible");
+  }
+
+  if (!valueCell) {
+      valueCell = td.getElementsByClassName('gb-value')[0];
+  }
+
+  $.data(td, "studentid", student.userId);
+  if (column.type === "assignment") {
+      $.data(td, "assignmentid", column.assignmentId);
+      $.removeData(td, "categoryId");
+
+      if (GbGradeTable.settings.isPercentageGradeEntry && value != null && value != "") {
+          GbGradeTable.replaceContents(valueCell, document.createTextNode('' + value + '%'));
+      }
+
+      // rewrite the dropdown tooltip
+      var dropdownToggle = $td.find('.dropdown-toggle');
+      if (dropdownToggle.length > 0) {
+          if (isReadOnly) {
+              dropdownToggle[0].style.display = 'none';
+              dropdownToggle.attr('aria-hidden', 'true');
+          } else {
+              dropdownToggle[0].style.display = 'block';
+              dropdownToggle.attr('aria-hidden', 'false');
+              var dropdownToggleTooltip = GbGradeTable.tbrTemplates.gradeMenuTooltip.process();
+              dropdownToggleTooltip = dropdownToggleTooltip.replace('{0}', student.firstName + ' ' + student.lastName);
+              dropdownToggleTooltip = dropdownToggleTooltip.replace('{1}', column.title);
+              dropdownToggle.attr('title', dropdownToggleTooltip);
+          }
+      }
+  } else if (column.type === "category") {
+      $.data(td, "categoryId", column.categoryId);
+      $.removeData(td, "assignmentid");
+      GbGradeTable.replaceContents(valueCell, document.createTextNode(GbGradeTable.formatCategoryAverage(value)));
+
+      var dropdownToggle = $td.find('.dropdown-toggle');
+      if (dropdownToggle.length > 0) {
+          dropdownToggle[0].style.display = 'none';
+          dropdownToggle.attr('aria-hidden', 'true');
+      }
+  } else {
+      throw "column.type not supported: " + column.type;
+  }
+
+  // collect all the notification
+  var notifications = [];
+
+  // comment notification
+  var commentNotification = td.getElementsByClassName("gb-comment-notification")[0];
+  if (commentNotification) {
+      if (hasComment) {
+          commentNotification.style.display = 'block';
+          notifications.push({
+              type: 'comment',
+              comment: "..."
+          });
+      } else {
+          commentNotification.style.display = 'none';
+      }
+  }
+
+  // other notifications
+  var gbNotification = td.getElementsByClassName('gb-notification')[0];
+  var cellDiv = td.getElementsByClassName('relative')[0];
+
+  cellDiv.className = 'relative';
+  var $cellDiv = $(cellDiv);
+
+  if (column.externallyMaintained) {
+      $cellDiv.addClass("gb-read-only");
+      notifications.push({
+          type: 'external',
+          externalId: column.externalId,
+          externalAppName: column.externalAppName,
+          externalToolTitle: column.externalToolTitle,
+      });
+      // Mark negative scores as invalid
+      if (typeof value == 'string' && value[0] == '-') {
+          $cellDiv.addClass('gb-external-invalid');
+          notifications.push({
+              type: 'external-invalid'
+          });
+      }
+  } else if (isReadOnly) {
+      $cellDiv.addClass("gb-read-only");
+      notifications.push({
+          type: 'readonly'
+      });
+  } else if (scoreState == "saved") {
+      $cellDiv.addClass("gb-save-success");
+
+      setTimeout(function() {
+          GbGradeTable.clearCellState(row, col);
+          $cellDiv.removeClass("gb-save-success", 2000);
+      }, 2000);
+  } else if (scoreState == "synced") {
+      $cellDiv.addClass("gb-just-synced");
+
+      setTimeout(function() {
+          GbGradeTable.clearCellState(row, col);
+          $cellDiv.removeClass("gb-just-synced", 2000);
+      }, 2000);
+  } else if (hasConcurrentEdit) {
+      $cellDiv.addClass("gb-concurrent-edit");
+      notifications.push({
+          type: 'concurrent-edit',
+          conflict: GbGradeTable.conflictFor(student, column.assignmentId),
+          showSaveError: (scoreState == 'error')
+      });
+  } else if (scoreState == "error") {
+      $cellDiv.addClass("gb-save-error");
+      notifications.push({
+          type: 'save-error'
+      });
+  } else if (scoreState == "invalid") {
+      $cellDiv.addClass("gb-save-invalid");
+      notifications.push({
+          type: 'save-invalid'
+      });
+  }
+  var isExtraCredit = false;
+
+  const numberValue = GbGradeTable.localizedStringToNumber(value);
+  if (GbGradeTable.settings.isPointsGradeEntry) {
+      isExtraCredit = numberValue > parseFloat(column.points);
+  } else if (GbGradeTable.settings.isPercentageGradeEntry) {
+      isExtraCredit = numberValue > 100;
+  }
+
+  if (isExtraCredit && !hasExcuse) {
+      $cellDiv.addClass("gb-extra-credit");
+      $(gbNotification).addClass("gb-flag-extra-credit");
+      notifications.push({
+          type: 'extra-credit'
+      });
+  } else {
+      $(gbNotification).removeClass("gb-flag-extra-credit");
+      $cellDiv.removeClass("gb-extra-credit");
+  }
+
+  $cellDiv.toggleClass("gb-dropped-grade-cell", isDropped && scoreState !== "error" && scoreState !== "invalid");
+  if(hasExcuse){
+      $cellDiv.removeClass("gb-extra-credit");
+      $(gbNotification).removeClass("gb-flag-extra-credit");
+      $cellDiv.addClass("gb-excused");
+      $(gbNotification).addClass("gb-flag-excused");
+
+      notifications.push({
+          type: 'excused'
+      });
+  }else{
+      $cellDiv.removeClass("gb-excused");
+      $(gbNotification).removeClass("gb-flag-excused");
+  }
+
+  if (column.type == 'category') {
+      $cellDiv.addClass('gb-category-average');
+  } else {
+      $cellDiv.removeClass('gb-category-average');
+  }
+
+  // create notification tooltip
+  if (column.type == 'assignment') {
+      $.data(td, "metadata", {
+          id: cellKey,
+          student: student,
+          value: value,
+          assignment: column,
+          notifications: notifications,
+          readonly: isReadOnly
+      });
+  } else if (column.type == 'category') {
+      $.data(td, "metadata", {
+          id: cellKey,
+          student: student,
+          categoryAverage: GbGradeTable.formatCategoryAverage(value),
+          category: column,
+          notifications: notifications
+      });
+  } else {
+      td.removeAttribute('aria-describedby');
+      $.data(td, "metadata", null);
+  }
+
+  $.data(td, 'cell-initialised', cellKey);
+
+  return $td.html(); // Return the inner HTML of the cell element
+};
+
 GbGradeTable.getTooltipForColumnType
   = columnType => GbGradeTable.i18n[`label.gradeitem.${columnType}headertooltip`];
 
@@ -697,11 +994,13 @@ GbGradeTable.studentCellRenderer = function(instance, td, row, col, prop, value,
     id: cellKey,
     student: value
   });
+  // console.log("Student Cell HTML the other wone:", html); // Debugging log
 
   $td.removeAttr('aria-describedby');
 }
 
-function tbrStudentCellFormatter(cell, formatterParams, onRendered) {
+GbGradeTable.tbrStudentCellFormatter = function (cell, formatterParams, onRendered) {
+  // console.log("Student Cell is called"); // Debugging log
   var value = cell.getValue();
   if (value === null) {
     return "";
@@ -721,10 +1020,10 @@ function tbrStudentCellFormatter(cell, formatterParams, onRendered) {
   var data = Object.assign({
     settings: GbGradeTable.settings
   }, value);
-  console.log("Student Cell Data:",value); // Debugging log
+  // console.log("Student Cell Data:",value); // Debugging log
 
   // Assuming GbGradeTable.templates.studentCell is a function that returns HTML
-  var html = GbGradeTable.templates.studentCell.setHTML(data);
+  var html = GbGradeTable.tbrTemplates.studentCell.setHTML(data);
 
   div.innerHTML = html;
 
@@ -762,6 +1061,7 @@ GbGradeTable.mergeColumns = function (data, fixedColumns) {
     result.push(updatedRow)
   }
 
+
   return result;
 }
 
@@ -780,6 +1080,47 @@ GbGradeTable.ajax = function (params, callback) {
 
   GbGradeTable.domElement.trigger("gbgradetable.action", params);
 };
+
+GbGradeTable.tbrstudentNumberCellFormatter = function(cell, formatterParams, onRendered) {
+
+  console.log("Student Number Cell is called"); // Debugging log
+  // Get the cell value and other properties
+  var value = cell.getValue();
+  var row = cell.getRow().getIndex();
+  var col = cell.getColumn().getField();
+
+  if (value === null) {
+      return;
+  }
+
+  var cellElement = cell.getElement();
+
+  $(cellElement).attr("scope", "row").attr("role", "rowHeader");
+
+  var cellKey = (row + '_' + col);
+
+  var data = {
+      settings: GbGradeTable.settings,
+      studentNumber: value
+  };
+
+  var html = GbGradeTable.tbrTemplates.studentNumberCell.setHTML(cellElement, data);
+
+  $.data(cellElement, 'cell-initialised', cellKey);
+  $.data(cellElement, "studentid", value.userId);
+  $.data(cellElement, "metadata", {
+      id: cellKey,
+      student: value
+  });
+
+  $(cellElement).removeAttr('aria-describedby');
+
+  // Return the HTML content
+  // console.log("Student Number Cell HTML:", html); // Debugging log
+  return html;
+};
+
+
 
 
 GbGradeTable.renderTable = function (elementId, tableData) {
@@ -826,141 +1167,6 @@ GbGradeTable.renderTable = function (elementId, tableData) {
 // ];
 
 
-GbGradeTable.tbrFixedColumns = [
-  // Student name column
-  {
-    titleFormatter: function() {
-      var col = 0; 
-      // var column = {
-      //   type: "student", // Example type, adjust as necessary
-      //   title: "Studentss"
-      // };
-      var $th = document.createElement('th');
-
-      // Use the headerRenderer function to get the processed HTML
-      var headerHtml = GbGradeTable.headerRenderer(col, $th);
-
-      // Create a div and set its inner HTML
-      var headerDiv = document.createElement("div");
-      headerDiv.innerHTML = headerHtml;
-
-      // Return the div's inner HTML
-      return headerDiv.innerHTML;
-    },
-    field: "studentname",
-    formatter: GbGradeTable.studentCellRenderer,
-    editor: false,
-    width: 220,
-  },
-  // Student number column
-  {
-    titleFormatter: function() {
-      var col = 1;
-      // var column = {
-      //   type: "studentnumber", // Example type, adjust as necessary
-      //   title: "Student Number"
-      // };
-      var $th = document.createElement('th');
-
-      // Use the headerRenderer function to get the processed HTML
-      var headerHtml = GbGradeTable.headerRenderer(col, $th);
-
-      // Create a div and set its inner HTML
-      var headerDiv = document.createElement("div");
-      headerDiv.innerHTML = headerHtml;
-
-      // Return the div's inner HTML
-      return headerDiv.innerHTML;
-    },
-    field: "studentnumber",
-    formatter: function(cell, formatterParams, onRendered) {
-      return GbGradeTable.studentNumberCellRenderer(cell.getValue(), cell.getRow().getData());
-    },
-    editor: false,
-    width: studentNumberColumnWidth,
-  },
-  // Course grade column
-  {
-    titleFormatter: function() {
-      var col = 2; // Adjust the column index as necessary
-      // var column = {
-      //   type: "coursegrade", // Example type, adjust as necessary
-      //   title: "Course Grade"
-      // };
-      var $th = document.createElement('th');
-
-      // Use the headerRenderer function to get the processed HTML
-      var headerHtml = GbGradeTable.headerRenderer(col, $th);
-
-      // Create a div and set its inner HTML
-      var headerDiv = document.createElement("div");
-      headerDiv.innerHTML = headerHtml;
-
-      // Return the div's inner HTML
-      return headerDiv.innerHTML;
-    },
-    field: "coursegrade",
-    formatter: function(cell, formatterParams, onRendered) {
-      return GbGradeTable.courseGradeRenderer(cell.getValue(), cell.getRow().getData());
-    },
-    editor: false,
-    width: GbGradeTable.settings.showPoints ? 220 : 140,
-  }
-];
-
-
-
-// GbGradeTable.tbrFixedColumns = GbGradeTable.getFixedColumns().map((fixedColumn, index) => {
-//   return {
-//     titleFormatter: function() {
-//       const column = fixedColumn._data_;
-//       const $th = document.createElement('th');
-
-//       // Use the headerRenderer function to get the processed HTML
-//       const headerHtml = GbGradeTable.headerRenderer(index, column, $th);
-//       console.log(`tbrProcessed ${column.type} Header HTML:`, headerHtml); // Debugging log
-
-//       // Create a div and set its inner HTML
-//       const headerDiv = document.createElement("div");
-//       headerDiv.innerHTML = headerHtml;
-
-//       // Return the div's inner HTML
-//       return headerDiv.innerHTML;
-//     },
-//     field: column.type,
-//     formatter: function(cell, formatterParams, onRendered) {
-//       return fixedColumn.renderer(cell.getValue(), cell.getRow().getData());
-//     },
-//     editor: fixedColumn.editor,
-//     width: fixedColumn.width,
-//   };
-// });
-
-GbGradeTable.tbrColumns = GbGradeTable.columns.map((column, index) => {
-  return {
-    titleFormatter: function() {
-      const colIndex = GbGradeTable.FIXED_COLUMN_OFFSET + index;
-      const $th = document.createElement('th');
-
-      // Use the headerRenderer function to get the processed HTML
-      const headerHtml = GbGradeTable.headerRenderer(colIndex, column, $th);
-      // console.log(`Processed ${column.type} Header HTML:`, headerHtml); // Debugging log
-
-      // Create a div and set its inner HTML
-      const headerDiv = document.createElement("div");
-      headerDiv.innerHTML = headerHtml;
-
-      // Return the div's inner HTML
-      return headerDiv.innerHTML;
-    },
-    field: column.type,
-    // formatter: function(cell, formatterParams, onRendered) {
-    //   return GbGradeTable.cellRenderer(cell, cell.getElement(), cell.getRow().getPosition(), cell.getColumn().getPosition(), column.type, cell.getValue(), formatterParams);
-    // },
-    editor: column.editor,
-    width: column.width || 180,
-  };
-});
 
 
 
@@ -1073,17 +1279,7 @@ GbGradeTable.tbrColumns = GbGradeTable.columns.map((column, index) => {
   };
 
 
-  const allColumns = GbGradeTable.tbrFixedColumns.concat(GbGradeTable.tbrColumns);
 
-
-  // Initialize the tabulator
-  GbGradeTable.newInstance = new Tabulator ("#tbr_gradeTableWrapper", {
-    debugInitialization:true, // only for debugging
-    data: GbGradeTable.getFilteredData(),
-    layout: "fitColumns",
-    columns: allColumns,
-
-  });
 
   GbGradeTable.instance = new Handsontable(document.getElementById(elementId), {
     data: GbGradeTable.getFilteredData(),
@@ -2056,8 +2252,8 @@ GbGradeTable.getFilteredColumns = function() {
   return GbGradeTable.getFixedColumns().concat(GbGradeTable.columns.filter(function(col) {
     return !col.hidden;
   }).map(function (column) {
-    console.log(column  + " columnsss" + column.type)
-    console.log("columnsss22: " + JSON.stringify(column));
+    // console.log(column  + " columnsss" + column.type)
+    // console.log("columnsss22: " + JSON.stringify(column));
 
     if (column.type === 'category') {
       return {
@@ -3749,6 +3945,42 @@ GbGradeTable.positionModalAtTop = function($modal) {
     $modal.css('top', 30 + $(window).scrollTop() + "px");
 };
 
+
+
+GbGradeTable.tbrstudentNumberCellRenderer = function(cell, formatterParams, onRendered) {
+  var value = cell.getValue();
+  var td = cell.getElement();
+
+  if (value === null) {
+      return "";
+  }
+
+  var $td = $(td);
+
+  $td.attr("scope", "row").attr("role", "rowHeader");
+
+  var row = cell.getRow().getPosition();
+  var col = cell.getColumn().getPosition();
+  var cellKey = row + '_' + col;
+
+  var data = {
+      settings: GbGradeTable.settings,
+      studentNumber: value
+  };
+
+  var html = GbGradeTable.templates.studentNumberCell.setHTML(td, data);
+
+  $.data(td, 'cell-initialised', cellKey);
+  $.data(td, "studentid", value.userId);
+  $.data(td, "metadata", {
+      id: cellKey,
+      student: value
+  });
+
+  $td.removeAttr('aria-describedby');
+
+  return html;
+};
 
 GbGradeTable.setupStudentNumberColumn = function() {
     GbGradeTable.templates['studentNumberCell'] = new TrimPathFragmentCache(
