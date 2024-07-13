@@ -604,7 +604,10 @@ GbGradeTable.headerRenderer = function (col, column, $th) {
 
   const cleanedTitle = templateData.title.replace(/"/g, '&quot;');
 
-  if (column.type === "assignment") {
+  // console.log("headerRenderer", col, column, $th)
+
+
+  if (column.type === "assignment") {          // todo for tabulator
     templateData.tooltip = GbGradeTable.i18n["label.gradeitem.assignmentheadertooltip"].replace("{0}", cleanedTitle);
     return GbGradeTable.templates.assignmentHeader.process(templateData);
   } else if (column.type === "category") {
@@ -630,6 +633,7 @@ GbGradeTable.studentCellRenderer = function(instance, td, row, col, prop, value,
   var data = $.extend({
     settings: GbGradeTable.settings
   }, value);
+
 
   var html = GbGradeTable.templates.studentCell.setHTML(td, data);
 
@@ -681,8 +685,6 @@ GbGradeTable.ajax = function (params, callback) {
 };
 
 
-
-
 GbGradeTable.renderTable = function (elementId, tableData) {
   GbGradeTable.domElement = $('#' + elementId);
   GbGradeTable.students = tableData.students;
@@ -695,9 +697,7 @@ GbGradeTable.renderTable = function (elementId, tableData) {
   GbGradeTable.i18n = tableData.i18n;
   GbGradeTable._fixedColumns.push({
     columnType: "studentname",
-    titleFormatter: GbGradeTable.templates.studentHeader,
     renderer: GbGradeTable.studentCellRenderer,
-    formatter: GbGradeTable.studentCellRenderer,
     headerTemplate: GbGradeTable.templates.studentHeader,
     _data_: GbGradeTable.students,
     editor: false,
@@ -803,14 +803,6 @@ GbGradeTable.renderTable = function (elementId, tableData) {
     return GbGradeTable.getColumnWidths().reduce(function (acc, cur) { return acc + cur; }, 0) + scrollbarWidth;
   };
 
-  GbGradeTable.newInstance = new Tabulator ("#tbr_gradeTableWrapper", {
-    // debugInitialization:true, // only for debugging
-    data: GbGradeTable.getFilteredData(),
-    layout: "fitColumns",
-    columns: GbGradeTable.getFilteredColumns(),
-
-  });
-
   GbGradeTable.instance = new Handsontable(document.getElementById(elementId), {
     data: GbGradeTable.getFilteredData(),
     fixedColumnsLeft:  MorpheusViewportHelper.isPhone() ? 0 : GbGradeTable.FIXED_COLUMN_OFFSET,
@@ -837,10 +829,12 @@ GbGradeTable.renderTable = function (elementId, tableData) {
       var html = '';
       if (col < GbGradeTable.FIXED_COLUMN_OFFSET) {
         html = GbGradeTable.headerRenderer(col, $th);
+        // console.log('col', col, 'html', html);
       } else {
         //If col is not rendered, skip header renderer
         if (!GbGradeTable.isColumnRendered(this, col)) return false;
         html = GbGradeTable.headerRenderer(col, this.view.settings.columns[col]._data_, $th);
+
       }
 
       // If we haven't got a cached parse of it, do that now
@@ -1773,7 +1767,7 @@ GbGradeTable.redrawTable = function(force) {
 
 GbGradeTable._fixedColumns = [];
 
-GbGradeTable.getFixedColumns = function() {
+GbGradeTable.getFixedColumns = function() {  // todo
   return GbGradeTable._fixedColumns;
 };
 
@@ -1800,11 +1794,12 @@ GbGradeTable.getFilteredColumns = function() {
   }));
 };
 
-// GbGradeTable.getFilteredColHeaders = function() {
-//   return GbGradeTable.getFilteredColumns().map(function() {
-//     return GbGradeTable.headerRenderer;
-//   });
-// };
+
+GbGradeTable.getFilteredColHeaders = function() {
+  return GbGradeTable.getFilteredColumns().map(function() {
+    return GbGradeTable.headerRenderer;
+  });
+};
 
 GbGradeTable.getFilteredData = function() {
   var data = GbGradeTable.grades.slice(0);
@@ -3529,6 +3524,7 @@ GbGradeTable.setupSectionsColumn = function () {
     GbGradeTable.templates['sectionsHeader'] = TrimPath.parseTemplate($("#sectionsHeaderTemplate").html().trim().toString());
 
     GbGradeTable.sectionsCellRenderer =  function(instance, td, row, col, prop, value, cellProperties) {
+
 
         if (value === null) {
             return;
