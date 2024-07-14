@@ -604,7 +604,6 @@ GbGradeTable.headerRenderer = function (col, column, $th) {
 
   const cleanedTitle = templateData.title.replace(/"/g, '&quot;');
 
-  // console.log("headerRenderer", col, column, $th)
 
 
   if (column.type === "assignment") {          // todo for tabulator
@@ -752,39 +751,86 @@ GbGradeTable.renderTable = function (elementId, tableData) {
                                                                       tableData.columnCount),
                                                   GbGradeTable.getFixedColumns());
 
-  GbGradeTableEditor = Handsontable.editors.TextEditor.prototype.extend();
+  // GbGradeTableEditor = Handsontable.editors.TextEditor.prototype.extend();
 
-  GbGradeTableEditor.prototype.createElements = function () {
-    Handsontable.editors.TextEditor.prototype.createElements.apply(this, arguments);
-    var outOf = "<span class='out-of'></span>";
-    $(this.TEXTAREA_PARENT).append(outOf);
-  };
+  // GbGradeTableEditor.prototype.createElements = function () {
+  //   Handsontable.editors.TextEditor.prototype.createElements.apply(this, arguments);
+  //   var outOf = "<span class='out-of'></span>";
+  //   $(this.TEXTAREA_PARENT).append(outOf);
+  // };
 
-  GbGradeTableEditor.prototype.beginEditing = function() {
-    Handsontable.editors.TextEditor.prototype.beginEditing.apply(this, arguments);
+  // GbGradeTableEditor.prototype.beginEditing = function() {
+  //   Handsontable.editors.TextEditor.prototype.beginEditing.apply(this, arguments);
 
-    var col = this.instance.getSelected()[0][1];
+  //   var col = this.instance.getSelected()[0][1];
 
-    var outOf = $(this.TEXTAREA_PARENT).find(".out-of")[0];
+  //   var outOf = $(this.TEXTAREA_PARENT).find(".out-of")[0];
 
-    if (GbGradeTable.settings.isPercentageGradeEntry) {
-      outOf.innerHTML = "100%";
-    } else if (GbGradeTable.settings.isPointsGradeEntry) {
-      //If col is not rendered, skip begin editing cell
-      if (!GbGradeTable.isColumnRendered(GbGradeTable.instance, col)) return false;
-      var assignment = GbGradeTable.instance.view.settings.columns[col]._data_;
-      var points = assignment.points;
-      outOf.innerHTML = "/" + points;
+  //   if (GbGradeTable.settings.isPercentageGradeEntry) {
+  //     outOf.innerHTML = "100%";
+  //   } else if (GbGradeTable.settings.isPointsGradeEntry) {
+  //     //If col is not rendered, skip begin editing cell
+  //     if (!GbGradeTable.isColumnRendered(GbGradeTable.instance, col)) return false;
+  //     var assignment = GbGradeTable.instance.view.settings.columns[col]._data_;
+  //     var points = assignment.points;
+  //     outOf.innerHTML = "/" + points;
+  //   }
+  //   var innerHeight = ($(this.TEXTAREA).height() - 3) + 'px';
+  //   outOf.style.height = innerHeight;
+  //   outOf.style.lineHeight = innerHeight;
+  //   this.TEXTAREA.style.lineHeight = innerHeight;
+
+  //   if ($(this.TEXTAREA).val().length > 0) {
+  //     $(this.TEXTAREA).select();
+  //   }
+  // };
+
+
+  class GbGradeTableEditor {
+    constructor(cell, settings, instance) {
+      this.cell = cell;
+      this.TEXTAREA = null;
+      this.outOf = null;
+      this.settings = settings;
+      this.instance = instance;
     }
-    var innerHeight = ($(this.TEXTAREA).height() - 3) + 'px';
-    outOf.style.height = innerHeight;
-    outOf.style.lineHeight = innerHeight;
-    this.TEXTAREA.style.lineHeight = innerHeight;
-
-    if ($(this.TEXTAREA).val().length > 0) {
-      $(this.TEXTAREA).select();
+  
+    createElements() {
+      // Create a textarea element and append it to the cell
+      this.TEXTAREA = document.createElement('textarea');
+      this.cell.appendChild(this.TEXTAREA);
+  
+      // Create the outOf span element and append it to the cell
+      this.outOf = document.createElement('span');
+      this.outOf.className = 'out-of';
+      this.cell.appendChild(this.outOf);
     }
-  };
+  
+    beginEditing(col, cellValue) {
+      this.TEXTAREA.value = cellValue;
+  
+      if (this.settings.isPercentageGradeEntry) {
+        this.outOf.innerHTML = "100%";
+      } else if (this.settings.isPointsGradeEntry) {
+        // If col is not rendered, skip begin editing cell
+        if (!GbGradeTable.isColumnRendered(this.instance, col)) return false;
+        var assignment = this.instance.view.settings.columns[col]._data_;
+        var points = assignment.points;
+        this.outOf.innerHTML = "/" + points;
+      }
+  
+      var innerHeight = (this.TEXTAREA.clientHeight - 3) + 'px';
+      this.outOf.style.height = innerHeight;
+      this.outOf.style.lineHeight = innerHeight;
+      this.TEXTAREA.style.lineHeight = innerHeight;
+  
+      if (this.TEXTAREA.value.length > 0) {
+        this.TEXTAREA.select();
+      }
+    }
+  }
+  
+  
 
   GbGradeTable.container = $("#gradebookSpreadsheet");
 
@@ -822,7 +868,7 @@ GbGradeTable.renderTable = function (elementId, tableData) {
     },
 
     // This function is another hotspot.  Efficiency is paramount!
-    afterGetColHeader: function(col, th) {
+    afterGetColHeader: function(col, th) {    /// Understand it fully, it is a hook and how we can exactly replicate it in tabulator which doesn't offer this much customizations
       var $th = $(th);
 
       // Calculate the HTML that we need to show
@@ -834,7 +880,6 @@ GbGradeTable.renderTable = function (elementId, tableData) {
         //If col is not rendered, skip header renderer
         if (!GbGradeTable.isColumnRendered(this, col)) return false;
         html = GbGradeTable.headerRenderer(col, this.view.settings.columns[col]._data_, $th);
-
       }
 
       // If we haven't got a cached parse of it, do that now
@@ -1772,6 +1817,29 @@ GbGradeTable.getFixedColumns = function() {  // todo
 };
 
 
+// GbGradeTable.getFilteredColumns = function() {
+//   return GbGradeTable.getFixedColumns().concat(GbGradeTable.columns.filter(function(col) {
+//     return !col.hidden;
+//   }).map(function (column) {
+//     if (column.type === 'category') {
+//       return {
+//         renderer: GbGradeTable.cellRenderer,
+//         editor: false,
+//         _data_: column
+//       };
+//     } else {
+//       var readonly = column.externallyMaintained;
+
+//       return {
+//         renderer: GbGradeTable.cellRenderer,
+//         editor: readonly ? false : GbGradeTableEditor,
+//         _data_: column
+//       };
+//     }
+//   }));
+// };
+
+
 GbGradeTable.getFilteredColumns = function() {
   return GbGradeTable.getFixedColumns().concat(GbGradeTable.columns.filter(function(col) {
     return !col.hidden;
@@ -1785,14 +1853,22 @@ GbGradeTable.getFilteredColumns = function() {
     } else {
       var readonly = column.externallyMaintained;
 
+      // Define the editor function that will be used to instantiate GbGradeTableEditor
+      var editor = function(cell, col, settings, instance) {
+        const editorInstance = new GbGradeTableEditor(cell, settings, instance);
+        editorInstance.createElements();
+        return editorInstance;
+      };
+
       return {
         renderer: GbGradeTable.cellRenderer,
-        editor: readonly ? false : GbGradeTableEditor,
+        editor: readonly ? false : editor,
         _data_: column
       };
     }
   }));
 };
+
 
 
 GbGradeTable.getFilteredColHeaders = function() {
