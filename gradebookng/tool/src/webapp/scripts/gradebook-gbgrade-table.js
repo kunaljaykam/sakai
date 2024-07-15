@@ -1871,22 +1871,64 @@ GbGradeTable.getTbrFilteredColumns = function() {
   return GbGradeTable.getTbrFixedColumns().concat(GbGradeTable.columns.filter(function(col) {
     return !col.hidden;
   }).map(function (column) {
-    if (column.type === 'category') {
-      return {
-        formatter: GbGradeTable.cellRenderer,
-        titleFormatter: GbGradeTable.tbrHeaderRenderer(3, 'categoryScoreHeader'),
-        _data_: column
+    var readonly = column.externallyMaintained;
+    var hasAssociatedRubric = column.type === "assignment" ? column.hasAssociatedRubric : false;
+    var templateData = $.extend({
+      col: column, // Ensure col refers to the current column
+      settings: GbGradeTable.settings,
+      hasAssociatedRubric: hasAssociatedRubric,
+    }, column);
+
+    const cleanedTitle = templateData.title.replace(/"/g, '&quot;');
+
+    // Custom title formatter logic
+    var titleFormatter;
+    if (column.type === "assignment") {
+      templateData.tooltip = GbGradeTable.i18n["label.gradeitem.assignmentheadertooltip"].replace("{0}", cleanedTitle);
+      titleFormatter = function() {
+        return GbGradeTable.templates.assignmentHeader.process(templateData);
+      };
+    } else if (column.type === "category") {
+      templateData.tooltip = GbGradeTable.i18n["label.gradeitem.categoryheadertooltip"].replace("{0}", cleanedTitle);    // todo  - add class to the header
+      titleFormatter = function() {
+        return GbGradeTable.templates.categoryScoreHeader.process(templateData);
       };
     } else {
-      var readonly = column.externallyMaintained;
+      titleFormatter = function() {
+        return "Unknown column type for column: " + column + " (" + column.type + ")";
+      };
+    }
+
     return {
       formatter: GbGradeTable.cellRenderer,
-      titleFormatter: GbGradeTable.tbrHeaderRenderer(5, 'assignmentHeader'),
-      _data_: column
+      titleFormatter: titleFormatter,
+      width: 180,
     };
-    }
   }));
 };
+
+
+
+// var hasAssociatedRubric = column.type === "assignment" ? column.hasAssociatedRubric : false;
+
+// var templateData = $.extend({
+//   col: col,
+//   settings: GbGradeTable.settings,
+//   hasAssociatedRubric: hasAssociatedRubric,
+// }, column);
+
+// const cleanedTitle = templateData.title.replace(/"/g, '&quot;');
+
+// if (column.type === "assignment") {
+//   templateData.tooltip = GbGradeTable.i18n["label.gradeitem.assignmentheadertooltip"].replace("{0}", cleanedTitle);
+//   return GbGradeTable.templates.assignmentHeader.process(templateData);
+// } else if (column.type === "category") {
+//   templateData.tooltip = GbGradeTable.i18n["label.gradeitem.categoryheadertooltip"].replace("{0}", cleanedTitle);
+//   $th.addClass("gb-item-category");
+//   return GbGradeTable.templates.categoryScoreHeader.process(templateData);
+// } else {
+//   return "Unknown column type for column: " + col + " (" + column.type+ ")";
+// }
 
 GbGradeTable.getFilteredColumns = function() {
   return GbGradeTable.getFixedColumns().concat(GbGradeTable.columns.filter(function(col) {
