@@ -616,6 +616,46 @@ GbGradeTable.headerRenderer = function (col, column, $th) {
   }
 };
 
+
+GbGradeTable.tbrHeaderRenderer = function (colValue, headerKey, column) {
+  // if (colValue < GbGradeTable.getTbrFixedColumns().length) {
+    return function (col, header) {
+      try {
+        const template = GbGradeTable.templates[headerKey];
+        const column = { col: colValue, ...col };
+        return template.process({ col: column, settings: GbGradeTable.settings });
+      } catch (error) {
+        console.error("Error in tbrHeaderRenderer:", error);
+        return `<div class="header-error">Error rendering header</div>`;
+      }
+    };
+  // }
+
+  // var hasAssociatedRubric = column.type === "assignment" ? column.hasAssociatedRubric : false;
+
+  // var templateData = $.extend({
+  //   col: col,
+  //   settings: GbGradeTable.settings,
+  //   hasAssociatedRubric: hasAssociatedRubric,
+  // }, column);
+
+  // const cleanedTitle = templateData.title.replace(/"/g, '&quot;');
+
+  // if (column.type === "assignment") {
+  //   templateData.tooltip = GbGradeTable.i18n["label.gradeitem.assignmentheadertooltip"].replace("{0}", cleanedTitle);
+  //   return GbGradeTable.templates.assignmentHeader.process(templateData);
+  // } else if (column.type === "category") {
+  //   templateData.tooltip = GbGradeTable.i18n["label.gradeitem.categoryheadertooltip"].replace("{0}", cleanedTitle);
+  //   $th.addClass("gb-item-category");
+  //   return GbGradeTable.templates.categoryScoreHeader.process(templateData);
+  // } else {
+  //   return "Unknown column type for column: " + col + " (" + column.type+ ")";
+  // }
+};
+
+
+
+
 GbGradeTable.studentCellRenderer = function(instance, td, row, col, prop, value, cellProperties) {
   if (value === null) {
     return;
@@ -691,6 +731,43 @@ GbGradeTable.renderTable = function (elementId, tableData) {
   GbGradeTable.courseGradeId = tableData.courseGradeId;
   GbGradeTable.gradebookId = tableData.gradebookId;
   GbGradeTable.i18n = tableData.i18n;
+
+  // tbr_fixedColumns
+  GbGradeTable.tbr_fixedColumns.push(
+    {
+      title: "Student Name",
+      field: "studentname",
+      formatter: GbGradeTable.studentCellRenderer,
+      titleFormatter: GbGradeTable.tbrHeaderRenderer(0, 'studentHeader'),
+      width: 220,
+      sorter: function(a, b, aRow, bRow, column, dir, sorterParams) {
+        return GbGradeTable.studentSorter(a, b);
+      }
+    },
+    {
+      title: "Course Grade",
+      field: "coursegrade",
+      formatter: GbGradeTable.courseGradeRenderer,
+      titleFormatter: GbGradeTable.tbrHeaderRenderer(1, 'courseGradeHeader'),
+      width: GbGradeTable.settings.showPoints ? 220 : 140,
+      sorter: function(a, b, aRow, bRow, column, dir, sorterParams) {
+        const a_percent = parseFloat(a);
+        const b_percent = parseFloat(b);
+        const aIsNaN = isNaN(a_percent);
+        const bIsNaN = isNaN(b_percent);
+  
+
+        if (a_percent > b_percent || (!aIsNaN && bIsNaN)) {
+          return 1;
+        }
+        if (a_percent < b_percent || (aIsNaN && !bIsNaN)) {
+          return -1;
+        }
+        return 0;
+      }
+    }
+  );
+
   GbGradeTable._fixedColumns.push({
     columnType: "studentname",
     renderer: GbGradeTable.studentCellRenderer,
@@ -782,6 +859,8 @@ GbGradeTable.renderTable = function (elementId, tableData) {
     }
   };
 
+
+
   GbGradeTable.container = $("#gradebookSpreadsheet");
 
   GbGradeTable.columnDOMNodeCache = {};
@@ -798,6 +877,22 @@ GbGradeTable.renderTable = function (elementId, tableData) {
     var scrollbarWidth = GbGradeTable.students.length > 0 ? 16 : 0;
     return GbGradeTable.getColumnWidths().reduce(function (acc, cur) { return acc + cur; }, 0) + scrollbarWidth;
   };
+
+  // Initialize tabulator
+  GbGradeTable.newInstance = new Tabulator ("#tbr_gradeTableWrapper", {
+    data: GbGradeTable.getFilteredData(),
+    layout: "fitColumns",
+    columns: GbGradeTable.getTbrFilteredColumns(),
+    autoColumns: false,
+    height: GbGradeTable.calculateIdealHeight(),
+    width: GbGradeTable.calculateIdealWidth(),
+    resizableColumns: false,
+    resizableRows: false,
+    movableColumns: false,
+    movableRows: false,
+
+
+  });
 
   GbGradeTable.instance = new Handsontable(document.getElementById(elementId), {
     data: GbGradeTable.getFilteredData(),
@@ -1761,10 +1856,37 @@ GbGradeTable.redrawTable = function(force) {
 
 GbGradeTable._fixedColumns = [];
 
+// Tabulator Fixed Columns Definition
+GbGradeTable.tbr_fixedColumns = [];
+
 GbGradeTable.getFixedColumns = function() {
   return GbGradeTable._fixedColumns;
 };
 
+GbGradeTable.getTbrFixedColumns = function() {
+  return GbGradeTable.tbr_fixedColumns;
+};  
+
+GbGradeTable.getTbrFilteredColumns = function() {
+  return GbGradeTable.getTbrFixedColumns().concat(GbGradeTable.columns.filter(function(col) {
+    return !col.hidden;
+  }).map(function (column) {
+    if (column.type === 'category') {
+      return {
+        formatter: GbGradeTable.cellRenderer,
+        titleFormatter: GbGradeTable.tbrHeaderRenderer(3, 'categoryScoreHeader'),
+        _data_: column
+      };
+    } else {
+      var readonly = column.externallyMaintained;
+    return {
+      formatter: GbGradeTable.cellRenderer,
+      titleFormatter: GbGradeTable.tbrHeaderRenderer(5, 'assignmentHeader'),
+      _data_: column
+    };
+    }
+  }));
+};
 
 GbGradeTable.getFilteredColumns = function() {
   return GbGradeTable.getFixedColumns().concat(GbGradeTable.columns.filter(function(col) {
@@ -3495,6 +3617,17 @@ GbGradeTable.setupStudentNumberColumn = function() {
 
         $td.removeAttr('aria-describedby');
     };
+
+    GbGradeTable.tbr_fixedColumns.splice(1, 0, {
+        field: "studentnumber",
+        formatter: GbGradeTable.studentNumberCellRenderer,
+        titleFormatter: GbGradeTable.tbrHeaderRenderer(1, 'studentNumberHeader'),
+        _data_: GbGradeTable.students.map(function(student) {
+            return student.studentNumber || "";
+        }),
+        editor: false,
+        width: studentNumberColumnWidth,
+    });
 
     GbGradeTable._fixedColumns.splice(1, 0, {
         columnType: "studentnumber",
