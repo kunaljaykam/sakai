@@ -131,6 +131,9 @@ public class GbGradeTable extends Panel implements IHeaderContributor {
 		response.render(CssHeaderItem.forUrl(String.format("/gradebookng-tool/webjars/handsontable/6.2.2/handsontable.full.min.css%s", version)));
 
 		// Tabulator
+		// response.render(
+		// 		JavaScriptHeaderItem.forUrl(String.format("/gradebookng-tool/scripts/gradebook-tabulator-table.js%s", version)));
+
 		response.render(
 				JavaScriptHeaderItem.forUrl(String.format("/gradebookng-tool/webjars/tabulator-tables/6.2.0/dist/js/tabulator.min.js%s", version)));
 		response.render(CssHeaderItem.forUrl(String.format("/gradebookng-tool/webjars/tabulator-tables/6.2.0/dist/css/tabulator.min.css%s", version)));
@@ -140,10 +143,24 @@ public class GbGradeTable extends Panel implements IHeaderContributor {
 				gbGradeTableData,
 				this);
 
+
+
 		response.render(OnDomReadyHeaderItem.forScript(String.format("var tableData = %s", gradebookData.toScript())));
 
 		response.render(OnDomReadyHeaderItem.forScript(String.format("GbGradeTable.renderTable('%s', tableData)",
 				component.getMarkupId())));
+
+
+										//tabulator
+		// response.render(OnDomReadyHeaderItem.forScript(String.format("var tableDataTabulator = %s", gradebookData.toScript())));
+		// response.render(OnDomReadyHeaderItem.forScript(String.format("GbGradeTable.renderTableTabulator('%s', tableDataTabulator)",
+		// 		component.getMarkupId())));
+		// response.render(OnDomReadyHeaderItem.forScript(String.format(
+		// 	"var tableDataTabulator = %s; GbGradeTable.renderTabulatorTable('%s', tableDataTabulator);",
+		// 	gradebookData.toScript(), component.getMarkupId()
+		// )));
+
+
 
 		int sectionsColumnWidth = serverConfigService.getInt("gradebookng.sectionsColumnWidth", 140);
 		int studentNumberColumnWidth = serverConfigService.getInt("gradebookng.studentNumberColumnWidth", 140);
