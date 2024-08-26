@@ -35,9 +35,9 @@
                     {/if}
                 </div>
                 {if settings.isUserAbleToEditAssessments}
-                    <div class="dropdown dropend">
+                    <div class="dropdown dropend position-absolute top-0 end-0">
                         <button type="button"
-                            class="btn btn-sm btn-default dropdown-toggle"
+                            class="btn btn-sm btn-default bi bi-gear-fill"
                             data-bs-toggle="dropdown"
                             data-bs-popper-config='{"strategy": "fixed"}'
                             aria-haspopup="true"
@@ -133,9 +133,9 @@
                         <span class="gb-flag-not-released" wicket:message="title:label.gradeitem.notreleased"></span>
                     {/if}
                 </div>
-                <div class="dropdown dropend">
+                <div class="dropdown dropend position-absolute top-0 end-0">
                     <button type="button"
-                            class="btn btn-sm btn-default dropdown-toggle"
+                            class="btn btn-sm btn-default bi bi-gear-fill"
                             data-bs-toggle="dropdown"
                             data-bs-popper-config='{"strategy": "fixed"}'
                             aria-haspopup="true"
@@ -206,9 +206,9 @@
                 {for info in dropInfo}
                 <div class="gb-drop-info overflow-hidden text-truncate">${info}</div>
                 {/for}
-                <div class="dropdown dropend">
+                <div class="dropdown dropend position-absolute top-0 end-0">
                     <button type="button"
-                        class="btn btn-sm btn-default dropdown-toggle"
+                        class="btn btn-sm btn-default bi bi-gear-fill"
                         data-bs-toggle="dropdown"
                         data-bs-popper-config='{"strategy": "fixed"}'
                         aria-expanded="false"
@@ -227,9 +227,9 @@
                     <a class="gb-title d-block overflow-hidden text-truncate" wicket:message="title:sortbyname,aria-label:sortbyname">
                         <wicket:message key="column.header.students"/>
                     </a>
-                    <div class="dropdown dropend">
+                    <div class="dropdown dropend position-absolute top-0 end-0">
                         <button type="button"
-                            class="btn btn-sm btn-default dropdown-toggle"
+                            class="btn btn-sm btn-default bi bi-gear-fill"
                             data-bs-toggle="dropdown"
                             data-bs-popper-config='{"strategy": "fixed"}'
                             aria-haspopup="true"
@@ -260,7 +260,7 @@
         </script>
         <script id="studentNumberCellTemplate" type="text/template">
             <div class="relative gb-student-number-cell">
-                <div class="gb-value">
+                <div class="gb-value   d-flex mt-3 justify-content-center">
                     <div class="rowHeader">
                         ${studentNumber}
                     </div>
@@ -277,11 +277,11 @@
             </div>
         </script>
         <script id="sectionsCellTemplate" type="text/template">
-            <div class="gb-value gb-section-cell">
+            <div class="gb-value   d-flex mt-3 justify-content-center gb-section-cell">
               {if sections.length > 0}
               <div class="dropdown">
                 <button type="button"
-                    class="btn btn-secondary dropdown-toggle gb-section-button"
+                    class="btn btn-secondary gb-section-button"
                     title="${sections[0]}"
                     id="dropdownMenuButton"
                     data-bs-toggle="dropdown"
@@ -303,12 +303,14 @@
         </script>
         <script id="cellTemplate" type="text/template">
             <div class="relative">
-                <span class="gb-value">${value}</span>
+                <div class="gb-editable" style="min-height: 20px">
+                    <span class="gb-value   d-flex mt-3 justify-content-center">${value}</span>
+                </div>
                 <span class="gb-notification"></span>
-                <span class="gb-comment-notification"></span>
-                <div class="btn-group dropend">
+                <span class="gb-comment-notification bi bi-chat-right-dots position-absolute bottom-0" style="right:7px;"></span>
+                <div class="btn-group dropend position-absolute top-0 end-0">
                     <button type="button"
-                        class="btn btn-sm btn-default dropdown-toggle"
+                        class="btn btn-sm btn-default bi bi-gear"
                         data-bs-toggle="dropdown"
                         data-bs-popper-config='{"strategy": "fixed"}'
                         aria-haspopup="true"
@@ -326,15 +328,15 @@
         </script>
         <script id="courseGradeCellTemplate" type="text/template">
             <div class="relative">
-                <span class="gb-value {if isOverridden} gb-overridden {/if}">
+                <span class="gb-value   d-flex mt-3 justify-content-center {if isOverridden} gb-overridden {/if}">
                     ${value}
                 </span>
                 <span class="gb-notification"></span>
-                <span class="gb-course-comment-notification"></span>
+                <span class="gb-comment-notification bi bi-chat-right-dots position-absolute bottom-0" style="right:7px;"></span>
                 {if GbGradeTable.settings.isUserAbleToEditAssessments}
-                    <div class="btn-group dropend">
+                    <div class="btn-group dropend position-absolute top-0 end-0">
                         <button type="button"
-                            class="btn btn-sm btn-default dropdown-toggle"
+                            class="btn btn-sm btn-default bi bi-gear"
                             data-bs-toggle="dropdown"
                             data-bs-popper-config='{"strategy": "fixed"}'
                             aria-haspopup="true"
@@ -359,7 +361,7 @@
             {/if}
             {var tooltip = tooltip.replace(/"/g, '&quot;')}
             <div class="relative gb-student-cell" title="${tooltip}">
-                <div class="gb-value">
+                <div class="gb-value  ">
                     <div class="rowHeader">
                         <div style="display: flex; align-items: center;">
                             <div style="margin-right: 7px;">

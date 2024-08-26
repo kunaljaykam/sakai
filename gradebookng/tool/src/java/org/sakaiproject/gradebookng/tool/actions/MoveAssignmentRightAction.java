@@ -36,6 +36,7 @@ public class MoveAssignmentRightAction extends MoveAssignmentAction implements S
 
 		final Long assignmentId = Long.valueOf(params.get("assignmentId").asText());
 
+
 		GradebookUiSettings settings = gradebookPage.getUiSettings();
 
 		if (settings == null) {
