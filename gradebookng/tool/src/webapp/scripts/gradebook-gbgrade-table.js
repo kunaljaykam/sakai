@@ -2,11 +2,11 @@ GB_HIDDEN_ITEMS_KEY = portal.user.id + "#gradebook#hiddenitems";
 
 GbGradeTable = { _onReadyCallbacks: [] };
 
-GbGradeTable.dropdownShownHandler = e => {
+// GbGradeTable.dropdownShownHandler = e => {
 
-  // Focus the first visible list entry
-  e.target.nextElementSibling.querySelector("li:not(.d-none) a").focus();
-};
+//   // Focus the first visible list entry
+//   // e.target.nextElementSibling.querySelector("li:not(.d-none) a").focus();
+// };
 
 var addHiddenGbItemsCallback = function (hiddenItems) {
 
@@ -893,19 +893,32 @@ GbGradeTable.renderTable = function (elementId, tableData) {
   });
 
   GbGradeTable.instance.on("headerClick", (e, column) => {
-    if (e.target.classList.contains('gb-title')) {
-      const table = column.getTable();
-      const field = column.getField();
+          // Find the colIndex of the clicked column
+          const table = column.getTable();
+          const field = column.getField();
+          const colIndex = table.getColumns().findIndex(col => col.getField() === field);
+
+          console.log(colIndex, "colIndex");
+      
+          GbGradeTable.cellSelector(0, colIndex); // Use the dynamically found colIndex
+    if (e.target.classList.contains("gb-title")) {
+
       const currentSort = table.getSorters()[0];
-      const dir = (currentSort?.field === field && currentSort.dir === 'asc') ? 'desc' : 'asc';
+      const dir = (currentSort?.field === field && currentSort.dir === "asc") ? "desc" : "asc";
   
       // Set sort and update classes
       table.setSort(field, dir);
   
-      table.getColumns().forEach(col => col.getElement().classList.remove('gb-sorted-asc', 'gb-sorted-desc'));
+      table.getColumns().forEach(col =>
+        col.getElement().classList.remove("gb-sorted-asc", "gb-sorted-desc")
+      );
       column.getElement().classList.add(`gb-sorted-${dir}`);
+  
+
     }
-  })
+  });
+  
+
 
   GbGradeTable.instance.on("cellClick", (e, cell) => {
     GbGradeTable.deselectCell();
@@ -1081,6 +1094,16 @@ GbGradeTable.renderTable = function (elementId, tableData) {
     const rect = link.getBoundingClientRect();
     dropdownMenu.style.top = `${rect.bottom + window.scrollY}px`;
     dropdownMenu.style.left = `${rect.left + window.scrollX}px`;
+
+        // Focus the first visible dropdown item right after appending to the body
+    const firstVisibleItem = dropdownMenu.querySelector("li:not(.d-none) a");
+    if (firstVisibleItem) {
+      firstVisibleItem.focus();
+      console.log("Focused on first visible dropdown item:", firstVisibleItem);
+    } else {
+      console.log("No visible dropdown items to focus.");
+    }
+
 
     link.addEventListener('hidden.bs.dropdown', function () {
       link.parentNode.appendChild(dropdownMenu);
@@ -2338,35 +2361,45 @@ GbGradeTable.setupDragAndDrop = function () {
   });
 };
 
-GbGradeTable.setupKeyboardNavigation = function() {
-  // add grade table to the tab flow
+
+GbGradeTable.setupKeyboardNavigation = function () {
+  // Add grade table to the tab flow
   $(GbGradeTable.domElement).attr("tabindex", 0);
 
-  // enter Tabulator upon return
-  $(GbGradeTable.domElement).on("keydown", function(event) {
-    if ($(this).is(":focus") && event.keyCode == 13) {
+  // Enter Tabulator upon return
+  $(GbGradeTable.domElement).on("keydown", function (event) {
+    if ($(this).is(":focus") && event.keyCode === 13) {
       event.stopImmediatePropagation();
       $(this).blur();
-      GbGradeTable.cellSelector(0,0);
+      console.log("here we are");
+
+      GbGradeTable.cellSelector(0, 0); // Select the first cell
     }
   });
 
-  document.querySelector("#gradeTableWrapper").addEventListener("keydown", function (event) {
-  let handled = false;
+  // Blur the root element after cell selection
+  GbGradeTable.instance.on("cellClick", function (e, cell) {
+    setTimeout(() => {
+      GbGradeTable.domElement.blur();
+    });
+  });
 
-  function iGotThis(allowDefault) {
+  // Handle keyboard navigation and shortcuts
+  document.querySelector("#gradeTableWrapper").addEventListener("keydown", function (event) {
+    let handled = false;
+
+    function iGotThis(allowDefault) {
       event.stopImmediatePropagation();
       if (!allowDefault) {
-          event.preventDefault();
+        event.preventDefault();
       }
       handled = true;
-  }
+    }
 
-  const current = document.querySelector("#gradeTableWrapper .tabulator-cell.tabulator-editing") ||
-                  document.querySelector("#gradeTableWrapper .tabulator-cell.tabulator-selected");
-  const focus = document.activeElement;
+    const current = document.querySelector(".gb-cell-selected"); // Replace "td.current"
+    const focus = document.activeElement;
 
-  if (current) {
+    if (current) {
       // Allow accessibility shortcuts
       if (event.altKey && event.ctrlKey) {
         return iGotThis(true);
@@ -2374,54 +2407,56 @@ GbGradeTable.setupKeyboardNavigation = function() {
 
       const editing = !!document.querySelector("#gradeTableWrapper .tabulator-cell.tabulator-editing");
 
-      // space - open menu
-      if (!editing && event.keyCode == 32) {
+      // Space - open menu
+      if (!editing && event.keyCode === 32) {
         iGotThis();
 
-        // ctrl+space to open the header menu
-        const dropdownToggle = event.ctrlKey 
-            ? document.querySelector("#gradeTableWrapper .tabulator-col.tabulator-selected .dropdown-toggle")
-            : current.querySelector(".dropdown-toggle");
+        const tabulatorField = current.getAttribute("tabulator-field");
 
-        dropdownToggle.addEventListener("shown.bs.dropdown", GbGradeTable.dropdownShownHandler);
+        const dropdownToggle = event.ctrlKey
+          ? document.querySelector(
+              `#gradeTableWrapper .tabulator-col[tabulator-field="${tabulatorField}"] .dropdown-toggle`
+            )
+          : current.querySelector(".dropdown-toggle");
 
-        bootstrap.Dropdown.getOrCreateInstance(dropdownToggle).toggle();
+        if (dropdownToggle) {
+          dropdownToggle.addEventListener("shown.bs.dropdown", GbGradeTable.dropdownShownHandler, { once: true });
+          bootstrap.Dropdown.getOrCreateInstance(dropdownToggle).toggle();
+        }
       }
 
-      // menu focused
-    if (focus.closest(".dropdown-menu")) {
-
-      switch (event.keyCode) {
-          case 38: //up arrow
+      // Menu focused
+      if (focus.closest(".dropdown-menu")) {
+        switch (event.keyCode) {
+          case 38: // Up arrow
             iGotThis(true);
-            if (focus.closest("li").index() == 0) {
+            if (focus.closest("li").index() === 0) {
               current.focus();
             } else {
               focus.closest("li").previousElementSibling.querySelector("a").focus();
             }
             break;
-          case 40: //down arrow
+          case 40: // Down arrow
             iGotThis();
             focus.closest("li").nextElementSibling.querySelector("a").focus();
             break;
-          case 37: //left arrow
+          case 37: // Left arrow
             iGotThis(true);
             current.focus();
             break;
-          case 39: //right arrow
+          case 39: // Right arrow
             iGotThis(true);
             current.focus();
             break;
-          case 27: //esc
+          case 27: // Escape
             iGotThis(true);
             current.focus();
             break;
-          case 13: //enter
+          case 13: // Enter
             iGotThis(true);
-            // deselect cell so keyboard focus is given to the menu's action
             Tabulator.getInstance("#gradeTableWrapper").deselectRow();
             break;
-          case 9: //tab
+          case 9: // Tab
             iGotThis(true);
             current.focus();
             break;
@@ -2435,16 +2470,20 @@ GbGradeTable.setupKeyboardNavigation = function() {
         }
       }
 
-      // escape - return focus to table if not currently editing a grade
-      if (!editing && event.keyCode == 27) {
-        iGotThis();
-        Tabulator.getInstance("#gradeTableWrapper").deselectRow();
-        document.querySelector("#gradeTableWrapper").focus();
+      // Escape - return focus to the table if not editing
+      if (!editing && event.keyCode === 27) {
+        if (GbGradeTable._cancelDrag()) {
+          // Do nothing
+        } else {
+          iGotThis();
+          Tabulator.getInstance("#gradeTableWrapper").deselectRow();
+          document.querySelector("#gradeTableWrapper").focus();
+        }
       }
 
-      // return on student cell should invoke student summary
-      if (!editing && event.keyCode == 13) {
-        const gradeSummary = current.querySelector('.gb-view-grade-summary');
+      // Return on student cell should invoke student summary
+      if (!editing && event.keyCode === 13) {
+        const gradeSummary = current.querySelector(".gb-view-grade-summary");
         if (gradeSummary) {
           iGotThis();
           gradeSummary.click();
@@ -2453,6 +2492,7 @@ GbGradeTable.setupKeyboardNavigation = function() {
     }
   });
 };
+
 
 GbGradeTable.clearMetadata = function() {
   $(".gb-metadata").remove();

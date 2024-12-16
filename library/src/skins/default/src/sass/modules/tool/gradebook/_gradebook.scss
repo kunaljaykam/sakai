@@ -1665,7 +1665,12 @@ max-height:100px;
   height: 34px;
 }
 
-.gb-cell-selected {
+/* Shared styles for both selected and focused cells */
+.gb-cell-selected,
+.tabulator-cell:focus {
   border: 2px solid #007bff !important;
   box-shadow: 0 0 5px rgba(157, 198, 243, 0.75);
+  background-color: #f0f8ff; /* Optional for consistency */
+  outline: none; /* Remove browser's default outline */
 }
+
