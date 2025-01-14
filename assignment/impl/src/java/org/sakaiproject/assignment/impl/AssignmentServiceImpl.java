@@ -146,6 +146,7 @@ import org.sakaiproject.grading.api.AssessmentNotFoundException;
 import org.sakaiproject.grading.api.CategoryDefinition;
 import org.sakaiproject.grading.api.GradebookInformation;
 import org.sakaiproject.grading.api.GradingService;
+import org.sakaiproject.lti.api.LTIService;
 import org.sakaiproject.messaging.api.Message;
 import org.sakaiproject.messaging.api.MessageMedium;
 import org.sakaiproject.messaging.api.UserMessagingService;
@@ -244,6 +245,7 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
     @Setter private UserTimeService userTimeService;
     @Setter private TimeSheetService timeSheetService;
     @Setter private TagService tagService;
+    @Setter private LTIService ltiService;
 
     private boolean allowSubmitByInstructor;
     private boolean exposeContentReviewErrorsToUI;
@@ -317,6 +319,20 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
 
         int assignmentsArchived = 0;
         for (Assignment assignment : getAssignmentsForContext(siteId)) {
+
+            Map<String, Object> content = null;
+            Map<String, Object> tool = null;
+            if ( assignment.getContentId() != null ) {
+                Long contentKey = assignment.getContentId().longValue();
+                content = ltiService.getContent(contentKey.longValue(), siteId);
+                if ( content != null ) {
+                    Long toolKey = Long.valueOf(content.get(LTIService.LTI_TOOL_ID).toString());
+                    if (toolKey != null) {
+                        tool = ltiService.getTool(toolKey, siteId);
+                    }
+                }
+            }
+
             String xml = assignmentRepository.toXML(assignment);
             log.debug(xml);
 
@@ -324,8 +340,15 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
                 InputSource in = new InputSource(new StringReader(xml));
                 Document assignmentDocument = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(in);
                 Element assignmentElement = assignmentDocument.getDocumentElement();
+
+                if ( tool != null && content != null ) {
+                    Element contentElement = SakaiLTIUtil.archiveContent(assignmentDocument, content, tool);
+                    assignmentElement.appendChild(contentElement);
+                }
+
                 Node assignmentNode = doc.importNode(assignmentElement, true);
                 element.appendChild(assignmentNode);
+
 
                 // Model answer with optional attachments
                 AssignmentModelAnswerItem modelAnswer = assignmentSupplementItemService.getModelAnswer(assignment.getId());
@@ -985,6 +1008,20 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
         LSSerializer domSerializer = dom.createLSSerializer();
         domSerializer.getDomConfig().setParameter("xml-declaration", false);
         final String xml = domSerializer.writeToString(element);
+
+        // Check is there is a content item in this assignment
+        Map<String, Object> content = null;
+        Map<String, Object> tool = null;
+        NodeList nl = element.getElementsByTagName("sakai-lti-content");
+        if ( nl.getLength() >= 1 ) {
+            Node toolNode = nl.item(0);
+            if ( toolNode.getNodeType() == Node.ELEMENT_NODE ) {
+                Element toolElement = (Element) toolNode;
+                content = new HashMap();
+                tool = new HashMap();
+                SakaiLTIUtil.mergeContent(toolElement, content, tool);
+           }
+        }
 
         // Get an assignment object from the xml
         final Assignment assignmentFromXml = assignmentRepository.fromXML(xml);

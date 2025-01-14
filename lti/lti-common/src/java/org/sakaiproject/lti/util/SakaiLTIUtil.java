@@ -41,6 +41,11 @@ import java.time.Instant;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Node;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
@@ -3722,4 +3727,100 @@ public class SakaiLTIUtil {
 		return title;
 	}
 
+	public static Element archiveContent(Document doc, Map<String, Object> content, Map<String, Object> tool) {
+		Element retval = doc.createElement("sakai-lti-content");
+		for (String formInput : LTIService.CONTENT_MODEL) {
+			Properties info = parseFormString(formInput);
+			String field = info.getProperty("field", null);
+			String type = info.getProperty("type", null);
+			String archive = info.getProperty("archive", null);
+			if ( ! "true".equals(archive) ) continue;
+
+			Object o = content.get(field);
+			if ( o == null ) continue;
+
+			Element newElement = doc.createElement(field);
+			newElement.setTextContent(o.toString());
+			retval.appendChild(newElement);
+		}
+
+		if ( tool != null ) {
+			Element toolElement = archiveTool(doc, tool);
+			retval.appendChild(toolElement);
+		}
+		return retval;
+	}
+
+	public static void mergeContent(Element element, Map<String, Object> content, Map<String, Object> tool) {
+		for (String formInput : LTIService.CONTENT_MODEL) {
+			Properties info = parseFormString(formInput);
+			String field = info.getProperty("field", null);
+			String type = info.getProperty("type", null);
+			String archive = info.getProperty("archive", null);
+			if ( ! "true".equals(archive) ) continue;
+
+			NodeList nl = element.getElementsByTagName(field);
+			if ( nl.getLength() < 1 ) continue;
+			String value = nl.item(0).getTextContent();
+			if ( StringUtils.isEmpty(value) ) continue;
+			if ("checkbox".equals(type) || "integer".equals(type) || "radio".equals(type) || "key".equals(type) ) {
+				Long longVal = getLong(value);
+				if ( longVal < 0 ) continue;
+				content.put(field, longVal);
+			} else {
+				content.put(field, value);
+			}
+		}
+		if ( tool != null ) {
+			NodeList nl = element.getElementsByTagName("sakai-lti-tool");
+			if ( nl.getLength() >= 1 ) {
+				Node toolNode = nl.item(0);
+				if ( toolNode.getNodeType() == Node.ELEMENT_NODE ) {
+					Element toolElement = (Element) toolNode;
+					mergeTool(toolElement, tool);
+				}
+			}
+		}
+	}
+
+	public static Element archiveTool(Document doc, Map<String, Object> tool) {
+		Element retval = doc.createElement("sakai-lti-tool");
+		for (String formInput : LTIService.TOOL_MODEL) {
+			Properties info = parseFormString(formInput);
+			String field = info.getProperty("field", null);
+			String type = info.getProperty("type", null);
+			String archive = info.getProperty("archive", null);
+			if ( ! "true".equals(archive) ) continue;
+
+			Object o = tool.get(field);
+			if ( o == null ) continue;
+
+			Element newElement = doc.createElement(field);
+			newElement.setTextContent(o.toString());
+			retval.appendChild(newElement);
+		}
+		return retval;
+	}
+
+	public static void mergeTool(Element element, Map<String, Object> tool) {
+		for (String formInput : LTIService.TOOL_MODEL) {
+			Properties info = parseFormString(formInput);
+			String field = info.getProperty("field", null);
+			String type = info.getProperty("type", null);
+			String archive = info.getProperty("archive", null);
+			if ( ! "true".equals(archive) ) continue;
+
+			NodeList nl = element.getElementsByTagName(field);
+			if ( nl.getLength() < 1 ) continue;
+			String value = nl.item(0).getTextContent();
+			if ( StringUtils.isEmpty(value) ) continue;
+			if ("checkbox".equals(type) || "integer".equals(type) || "radio".equals(type) || "key".equals(type) ) {
+				Long longVal = getLong(value);
+				if ( longVal < 0 ) continue;
+				tool.put(field, longVal);
+			} else {
+				tool.put(field, value);
+			}
+		}
+	}
 }
