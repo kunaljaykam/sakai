@@ -3224,11 +3224,11 @@ public class SakaiLTIUtil {
 
 	// Refactored into tsugi-util - mark as legacy later
 	public static String toNull(String str) {
-		return LTI13Util.toNull(str);
+		return Foorm.toNull(str);
 	}
 
 	public static int getInt(Object o) {
-		return LTI13Util.getInt(o);
+		return Foorm.getInt(o);
 	}
 
 	public static Long getLongKey(Object key) {
@@ -3742,5 +3742,4 @@ public class SakaiLTIUtil {
 			}
 		}
 	}
-
 }

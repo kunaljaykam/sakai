@@ -2315,4 +2315,24 @@ public class Foorm {
 		return retval;
 	}
 
+	/**
+	 * Convert a Map<String, Object> to Properties for simple types
+	 */
+	public static Properties convertToProperties(Map<String, Object> map) {
+		Properties properties = new Properties();
+
+		for (Map.Entry<String, Object> entry : map.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+
+			// Check if the value is a simple type
+			if (value instanceof String || value instanceof Number || value instanceof Boolean) {
+				properties.put(key, value.toString());
+			} else {
+				continue; // Ignore non-simple types
+			}
+		}
+
+		return properties;
+	}
 }

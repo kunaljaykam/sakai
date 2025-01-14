@@ -327,6 +327,10 @@ public interface LTIService extends LTISubstitutionsFilter {
 
     // ---Tool
 
+    String validateTool(Properties newProps);
+
+    String validateTool(Map<String, Object> newProps);
+
     Object insertTool(Properties newProps, String siteId);
 
     Object insertTool(Map<String, Object> newProps, String siteId);
@@ -442,6 +446,10 @@ public interface LTIService extends LTISubstitutionsFilter {
     List<Map<String, Object>> getToolsDao(String search, String order, int first, int last, String siteId, boolean isAdmin, boolean includeStealthed, boolean includeLaunchable);
 
     // --- Content
+
+    String validateContent(Properties newProps);
+
+    String validateContent(Map<String, Object> newProps);
 
     Object insertContent(Properties newProps, String siteId);
 

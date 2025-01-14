@@ -147,6 +147,7 @@ import org.sakaiproject.grading.api.CategoryDefinition;
 import org.sakaiproject.grading.api.GradebookInformation;
 import org.sakaiproject.grading.api.GradingService;
 import org.sakaiproject.lti.api.LTIService;
+import org.sakaiproject.util.foorm.Foorm;
 import org.sakaiproject.messaging.api.Message;
 import org.sakaiproject.messaging.api.MessageMedium;
 import org.sakaiproject.messaging.api.UserMessagingService;
@@ -1020,16 +1021,66 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
                 content = new HashMap();
                 tool = new HashMap();
                 SakaiLTIUtil.mergeContent(toolElement, content, tool);
+                String contentErrors = ltiService.validateContent(content);
+                if ( contentErrors != null ) {
+                    log.warn("import found invalid sakai-lti-content "+contentErrors);
+                    content = null;
+                }
+
+                String toolErrors = ltiService.validateTool(tool);
+                if ( toolErrors != null ) {
+	                log.warn("import found invalid sakai-lti-tool "+toolErrors);
+                    tool = null;
+                }
            }
         }
-
-        // TODO: Handle the content and tool
 
         // Get an assignment object from the xml
         final Assignment assignmentFromXml = assignmentRepository.fromXML(xml);
         if (assignmentFromXml != null) {
             assignmentFromXml.setId(null);
             assignmentFromXml.setContext(siteId);
+            assignmentFromXml.setContentId(null);
+
+            // Lets find the right tool to assiociate with
+            // See also lessonbuilder/tool/src/java/org/sakaiproject/lessonbuildertool/service/BltiEntity.java
+            String launchUrl = content != null ? (String) content.get(LTIService.LTI_LAUNCH) : null;
+            log.debug("LTI Assignment {}",launchUrl);
+            if ( content != null && launchUrl != null && tool != null ) {
+                List<Map<String,Object>> tools = ltiService.getTools(null,null,0,0, siteId);
+                Map<String, Object> theTool = SakaiLTIUtil.findBestToolMatch(launchUrl, tools);
+                if ( theTool == null ) {
+                        Object result = ltiService.insertTool(tool, siteId);
+                        if ( result instanceof String ) {
+                            log.info("Could not insert tool - "+result);
+                        }
+                        if ( result instanceof Long ) theTool = ltiService.getTool((Long) result, siteId);
+                }
+
+                Map<String, Object> theContent = null;
+                if ( theTool == null ) {
+                    log.info("No tool to associate to content item - "+launchUrl);
+                } else {
+                    Long toolId = Foorm.getLongNull(theTool.get(LTIService.LTI_ID));
+                    log.debug("Matched toolId={} for launchUrl={}", toolId, launchUrl);
+                    content.put(LTIService.LTI_TOOL_ID, toolId.intValue());
+                    Object result = ltiService.insertContent(Foorm.convertToProperties(content), siteId);
+                    if ( result instanceof String ) {
+                        log.info("Could not insert content - "+result);
+                    }
+                    if ( result instanceof Long ) {
+                        theContent = ltiService.getContent((Long) result, siteId);
+                        if ( theContent == null) {
+                            log.warn("Could not re-retrieve inserted content item "+launchUrl);
+                        } else {
+                            Long contentKey = Foorm.getLongNull(theContent.get(LTIService.LTI_ID));
+                            log.debug("Created contentKey={} for launchUrl={}", contentKey, launchUrl);
+                            if ( contentKey != null ) assignmentFromXml.setContentId(contentKey.intValue());
+                        }
+                    }
+                }
+
+            }
 
             if (serverConfigurationService.getBoolean(SAK_PROP_ASSIGNMENT_IMPORT_SUBMISSIONS, false)) {
                 Set<AssignmentSubmission> submissions = assignmentFromXml.getSubmissions();
