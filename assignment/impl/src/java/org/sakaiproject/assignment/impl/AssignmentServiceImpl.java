@@ -1023,6 +1023,8 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
            }
         }
 
+        // TODO: Handle the content and tool
+
         // Get an assignment object from the xml
         final Assignment assignmentFromXml = assignmentRepository.fromXML(xml);
         if (assignmentFromXml != null) {

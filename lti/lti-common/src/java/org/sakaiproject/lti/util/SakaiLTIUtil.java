@@ -243,6 +243,9 @@ public class SakaiLTIUtil {
 		"urn:lti:instrole:ims/lis/Administrator=http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator;"
 	;
 
+	public static final String ARCHIVE_LTI_CONTENT_TAG = "sakai-lti-content";
+	public static final String ARCHIVE_LTI_TOOL_TAG = "sakai-lti-tool";
+
 		public static boolean rosterEnabled() {
 			String allowRoster = ServerConfigurationService.getString(LTI_ROSTER_ENABLED, LTI_ROSTER_ENABLED_DEFAULT);
 			return "true".equals(allowRoster);
@@ -2542,7 +2545,7 @@ public class SakaiLTIUtil {
         // Load assignment if it exists
 		org.sakaiproject.assignment.api.model.Assignment assignment;
         String contentKeyStr = normalProps.getProperty("contentKey");
-        Long contentKey = getLongKey(contentKeyStr);
+        Long contentKey = Foorm.getLongKey(contentKeyStr);
         if (contentKey > 0) {
                 Map<String, Object> content = new TreeMap<String, Object> ();
                 content.put(LTIService.LTI_ID, contentKey);
@@ -2732,7 +2735,7 @@ public class SakaiLTIUtil {
 
 	public static org.sakaiproject.assignment.api.model.Assignment getAssignment(Site site, Map<String, Object> content) {
 
-		Long contentId = getLongNull(content.get(LTIService.LTI_ID));
+		Long contentId = Foorm.getLongNull(content.get(LTIService.LTI_ID));
 		if ( contentId == null ) return null;
 
 		pushAdvisor();
@@ -3020,7 +3023,7 @@ public class SakaiLTIUtil {
 			Map<String, Object> tool;
 
 			String contentStr = placement_id.substring(8);
-			Long contentKey = getLongKey(contentStr);
+			Long contentKey = Foorm.getLongKey(contentStr);
 			if (contentKey < 0) {
 				return null;
 			}
@@ -3039,7 +3042,7 @@ public class SakaiLTIUtil {
 			retval.setProperty("contentKey", contentStr);
 			retval.setProperty(LTIService.LTI_SITE_ID, siteId);
 
-			Long toolKey = getLongKey(content.get(LTIService.LTI_TOOL_ID));
+			Long toolKey = Foorm.getLongKey(content.get(LTIService.LTI_TOOL_ID));
 			if (toolKey < 0) {
 				return null;
 			}
@@ -3052,7 +3055,7 @@ public class SakaiLTIUtil {
 			ltiService.filterContent(content, tool);
 
 			for (String formInput : LTIService.TOOL_MODEL) {
-				Properties info = parseFormString(formInput);
+				Properties info = Foorm.parseFormString(formInput);
 				String field = info.getProperty("field", null);
 				String type = info.getProperty("type", null);
 				Object o = tool.get(field);
@@ -3071,7 +3074,7 @@ public class SakaiLTIUtil {
 			}
 
 			for (String formInput : LTIService.CONTENT_MODEL) {
-				Properties info = parseFormString(formInput);
+				Properties info = Foorm.parseFormString(formInput);
 				String field = info.getProperty("field", null);
 				String type = info.getProperty("type", null);
 				Object o = content.get(field);
@@ -3219,25 +3222,6 @@ public class SakaiLTIUtil {
 		return retval;
 	}
 
-	public static String[] positional = {"field", "type"};
-
-	public static Properties parseFormString(String str) {
-		Properties op = new Properties();
-		String[] pairs = str.split(":");
-		int i = 0;
-		for (String s : pairs) {
-			String[] kv = s.split("=");
-			if (kv.length == 2) {
-				op.setProperty(kv[0], kv[1]);
-			} else if (kv.length == 1 && i < positional.length) {
-				op.setProperty(positional[i++], kv[0]);
-			} else {
-				// TODO : Logger something here
-			}
-		}
-		return op;
-	}
-
 	// Refactored into tsugi-util - mark as legacy later
 	public static String toNull(String str) {
 		return LTI13Util.toNull(str);
@@ -3248,7 +3232,7 @@ public class SakaiLTIUtil {
 	}
 
 	public static Long getLongKey(Object key) {
-		return LTI13Util.getLongKey(key);
+		return Foorm.getLongKey(key);
 	}
 
 	public static URL getUrlOrNull(String urlString) {
@@ -3408,7 +3392,7 @@ public class SakaiLTIUtil {
 		Long newToolId = null;
 
 		// Check the tool_id - if the tool_id is global we are cool
-		Long ltiToolId = getLong(ltiContent.get(LTIService.LTI_TOOL_ID));
+		Long ltiToolId = Foorm.getLong(ltiContent.get(LTIService.LTI_TOOL_ID));
 
 		// Get the tool bypassing security
 		Map<String, Object> ltiTool = ltiService.getToolDao(ltiToolId, siteId, true);
@@ -3429,7 +3413,7 @@ public class SakaiLTIUtil {
 				String oldLaunch = (String) tool.get(LTIService.LTI_LAUNCH);
 				if ( oldLaunch == null ) continue;
 				if ( oldLaunch.equals(toolLaunch) ) {
-					newToolId = getLong(tool.get(LTIService.LTI_ID));
+					newToolId = Foorm.getLong(tool.get(LTIService.LTI_ID));
 					break;
 				}
 			}
@@ -3501,11 +3485,11 @@ public class SakaiLTIUtil {
 	}
 
 	public static Long getLong(Object key) {
-		return LTI13Util.getLong(key);
+		return Foorm.getLong(key);
 	}
 
 	public static Long getLongNull(Object key) {
-		return LTI13Util.getLongNull(key);
+		return Foorm.getLongNull(key);
 	}
 
 	public static Double getDoubleNull(Object key) {
@@ -3628,13 +3612,13 @@ public class SakaiLTIUtil {
 	public static boolean isLTI13(Map<String, Object> tool, Map<String, Object> content) {
 		// 0=inherit from tool, 1=LTI 1.1, 2=LTI 1.3
 		if ( content != null ) {
-			Long contentLTI13 = getLong(content.get(LTIService.LTI13));
+			Long contentLTI13 = Foorm.getLong(content.get(LTIService.LTI13));
 			if ( contentLTI13.equals(2L)) return true;
 			if ( contentLTI13.equals(1L)) return false;
 		}
 
 		if ( tool == null ) return false;
-		Long toolLTI13 = getLong(tool.get(LTIService.LTI13));
+		Long toolLTI13 = Foorm.getLong(tool.get(LTIService.LTI13));
 		return ! toolLTI13.equals(0L);
 	}
 
@@ -3673,12 +3657,12 @@ public class SakaiLTIUtil {
 		String height = defaultValue;
 
 		if ( tool != null ) {
-			Long toolFrameHeight = LTI13Util.getLong(tool.get(LTIService.LTI_FRAMEHEIGHT));
+			Long toolFrameHeight = Foorm.getLong(tool.get(LTIService.LTI_FRAMEHEIGHT));
 			if ( toolFrameHeight > 1 )  height = toolFrameHeight + "px";
 		}
 
 		if (content != null) {
-			Long contentFrameHeight = LTI13Util.getLong(content.get(LTIService.LTI_FRAMEHEIGHT));
+			Long contentFrameHeight = Foorm.getLong(content.get(LTIService.LTI_FRAMEHEIGHT));
 			if ( contentFrameHeight > 0 ) height = contentFrameHeight + "px";
 		}
 
@@ -3692,12 +3676,12 @@ public class SakaiLTIUtil {
 		boolean newpage = defaultValue;
 
 		if (content != null ) {
-			Long contentNewpage = LTI13Util.getLongNull(content.get(LTIService.LTI_NEWPAGE));
+			Long contentNewpage = Foorm.getLongNull(content.get(LTIService.LTI_NEWPAGE));
 			if ( contentNewpage != null ) newpage = (contentNewpage != 0);
 		}
 
 		if ( tool != null ) {
-			Long toolNewpage = LTI13Util.getLongNull(tool.get(LTIService.LTI_NEWPAGE));
+			Long toolNewpage = Foorm.getLongNull(tool.get(LTIService.LTI_NEWPAGE));
 
 			if ( toolNewpage != null ) {
 				// Leave this alone for LTIService.LTI_TOOL_NEWPAGE_CONTENT
@@ -3727,22 +3711,12 @@ public class SakaiLTIUtil {
 		return title;
 	}
 
+	public static Element archiveTool(Document doc, Map<String, Object> tool) {
+		return Foorm.archiveThing(doc, ARCHIVE_LTI_TOOL_TAG, LTIService.TOOL_MODEL, tool);
+	}
+
 	public static Element archiveContent(Document doc, Map<String, Object> content, Map<String, Object> tool) {
-		Element retval = doc.createElement("sakai-lti-content");
-		for (String formInput : LTIService.CONTENT_MODEL) {
-			Properties info = parseFormString(formInput);
-			String field = info.getProperty("field", null);
-			String type = info.getProperty("type", null);
-			String archive = info.getProperty("archive", null);
-			if ( ! "true".equals(archive) ) continue;
-
-			Object o = content.get(field);
-			if ( o == null ) continue;
-
-			Element newElement = doc.createElement(field);
-			newElement.setTextContent(o.toString());
-			retval.appendChild(newElement);
-		}
+		Element retval = Foorm.archiveThing(doc, ARCHIVE_LTI_CONTENT_TAG, LTIService.CONTENT_MODEL, content);
 
 		if ( tool != null ) {
 			Element toolElement = archiveTool(doc, tool);
@@ -3751,28 +3725,14 @@ public class SakaiLTIUtil {
 		return retval;
 	}
 
-	public static void mergeContent(Element element, Map<String, Object> content, Map<String, Object> tool) {
-		for (String formInput : LTIService.CONTENT_MODEL) {
-			Properties info = parseFormString(formInput);
-			String field = info.getProperty("field", null);
-			String type = info.getProperty("type", null);
-			String archive = info.getProperty("archive", null);
-			if ( ! "true".equals(archive) ) continue;
+	public static void mergeTool(Element element, Map<String, Object> tool) {
+		Foorm.mergeThing(element, LTIService.TOOL_MODEL, tool);
+	}
 
-			NodeList nl = element.getElementsByTagName(field);
-			if ( nl.getLength() < 1 ) continue;
-			String value = nl.item(0).getTextContent();
-			if ( StringUtils.isEmpty(value) ) continue;
-			if ("checkbox".equals(type) || "integer".equals(type) || "radio".equals(type) || "key".equals(type) ) {
-				Long longVal = getLong(value);
-				if ( longVal < 0 ) continue;
-				content.put(field, longVal);
-			} else {
-				content.put(field, value);
-			}
-		}
+	public static void mergeContent(Element element, Map<String, Object> content, Map<String, Object> tool) {
+		Foorm.mergeThing(element, LTIService.CONTENT_MODEL, content);
 		if ( tool != null ) {
-			NodeList nl = element.getElementsByTagName("sakai-lti-tool");
+			NodeList nl = element.getElementsByTagName(ARCHIVE_LTI_TOOL_TAG);
 			if ( nl.getLength() >= 1 ) {
 				Node toolNode = nl.item(0);
 				if ( toolNode.getNodeType() == Node.ELEMENT_NODE ) {
@@ -3783,44 +3743,4 @@ public class SakaiLTIUtil {
 		}
 	}
 
-	public static Element archiveTool(Document doc, Map<String, Object> tool) {
-		Element retval = doc.createElement("sakai-lti-tool");
-		for (String formInput : LTIService.TOOL_MODEL) {
-			Properties info = parseFormString(formInput);
-			String field = info.getProperty("field", null);
-			String type = info.getProperty("type", null);
-			String archive = info.getProperty("archive", null);
-			if ( ! "true".equals(archive) ) continue;
-
-			Object o = tool.get(field);
-			if ( o == null ) continue;
-
-			Element newElement = doc.createElement(field);
-			newElement.setTextContent(o.toString());
-			retval.appendChild(newElement);
-		}
-		return retval;
-	}
-
-	public static void mergeTool(Element element, Map<String, Object> tool) {
-		for (String formInput : LTIService.TOOL_MODEL) {
-			Properties info = parseFormString(formInput);
-			String field = info.getProperty("field", null);
-			String type = info.getProperty("type", null);
-			String archive = info.getProperty("archive", null);
-			if ( ! "true".equals(archive) ) continue;
-
-			NodeList nl = element.getElementsByTagName(field);
-			if ( nl.getLength() < 1 ) continue;
-			String value = nl.item(0).getTextContent();
-			if ( StringUtils.isEmpty(value) ) continue;
-			if ("checkbox".equals(type) || "integer".equals(type) || "radio".equals(type) || "key".equals(type) ) {
-				Long longVal = getLong(value);
-				if ( longVal < 0 ) continue;
-				tool.put(field, longVal);
-			} else {
-				tool.put(field, value);
-			}
-		}
-	}
 }
