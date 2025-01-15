@@ -45,6 +45,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -459,11 +460,17 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
         final Stream<Node> allChildrenNodes = IntStream.range(0, allChildrenNodeList.getLength()).mapToObj(allChildrenNodeList::item);
         final List<Element> assignmentElements = allChildrenNodes.filter(node -> node.getNodeType() == Node.ELEMENT_NODE).map(element -> (Element) element).collect(Collectors.toList());
 
+        Set<String> assignmentTitles = new LinkedHashSet();
+        for (Assignment assignment : getAssignmentsForContext(siteId)) {
+            assignmentTitles.add(assignment.getTitle());
+        }
+
         int assignmentsMerged = 0;
 
         for (Element assignmentElement : assignmentElements) {
+
             try {
-                mergeAssignment(siteId, assignmentElement, results);
+                mergeAssignment(siteId, assignmentElement, results, assignmentTitles);
                 assignmentsMerged++;
             } catch (Exception e) {
                 final String error = "could not merge assignment with id: " + assignmentElement.getFirstChild().getFirstChild().getNodeValue();
@@ -998,7 +1005,7 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
         return submission.getSubmitters().stream().findAny().get().getTimeSpent();
     }
 
-    private Assignment mergeAssignment(final String siteId, final Element element, final StringBuilder results) throws PermissionException {
+    private Assignment mergeAssignment(final String siteId, final Element element, final StringBuilder results, Set<String> assignmentTitles) throws PermissionException {
 
         if (!allowAddAssignment(siteId)) {
             throw new PermissionException(sessionManager.getCurrentSessionUserId(), SECURE_ADD_ASSIGNMENT, AssignmentReferenceReckoner.reckoner().context(siteId).reckon().getReference());
@@ -1009,6 +1016,14 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
         LSSerializer domSerializer = dom.createLSSerializer();
         domSerializer.getDomConfig().setParameter("xml-declaration", false);
         final String xml = domSerializer.writeToString(element);
+
+        // Get an assignment object from the xml
+        final Assignment assignmentFromXml = assignmentRepository.fromXML(xml);
+
+        // Remove duplicates from the import
+        String assignmentTitle = assignmentFromXml.getTitle();
+        if ( assignmentTitle == null ) return null;
+        if ( assignmentTitles.contains(assignmentTitle) ) return null;
 
         // Check is there is a content item in this assignment
         Map<String, Object> content = null;
@@ -1029,14 +1044,12 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
 
                 String toolErrors = ltiService.validateTool(tool);
                 if ( toolErrors != null ) {
-	                log.warn("import found invalid sakai-lti-tool "+toolErrors);
+                    log.warn("import found invalid sakai-lti-tool "+toolErrors);
                     tool = null;
                 }
            }
         }
 
-        // Get an assignment object from the xml
-        final Assignment assignmentFromXml = assignmentRepository.fromXML(xml);
         if (assignmentFromXml != null) {
             assignmentFromXml.setId(null);
             assignmentFromXml.setContext(siteId);
@@ -1085,7 +1098,7 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
             if (serverConfigurationService.getBoolean(SAK_PROP_ASSIGNMENT_IMPORT_SUBMISSIONS, false)) {
                 Set<AssignmentSubmission> submissions = assignmentFromXml.getSubmissions();
                 if (submissions != null) {
-	                List<String> submitters = submissions.stream().flatMap(s -> s.getSubmitters().stream()).map(AssignmentSubmissionSubmitter::getSubmitter).collect(Collectors.toList());
+                    List<String> submitters = submissions.stream().flatMap(s -> s.getSubmitters().stream()).map(AssignmentSubmissionSubmitter::getSubmitter).collect(Collectors.toList());
 	                // only if all submitters can be found do we import submissions
 	                if (submitters.containsAll(userDirectoryService.getUsers(submitters).stream().map(user -> user.getId()).collect(Collectors.toList()))) {
                         submissions.forEach(s -> s.setId(null));
