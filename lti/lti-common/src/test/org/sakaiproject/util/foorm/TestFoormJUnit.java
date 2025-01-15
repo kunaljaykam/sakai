@@ -523,4 +523,19 @@ public class TestFoormJUnit {
 
 	}
 
+	@Test
+	public void testConvertToProperties() {
+		Map<String, Object> tool = new HashMap();
+		tool.put("a","one");
+		tool.put("b",Integer.valueOf(1));
+		tool.put("c",Long.valueOf(1));
+		String[] arr = {"a", "b", "c"};
+		tool.put("d", arr);
+		Properties props = Foorm.convertToProperties(tool);
+		assertEquals(props.getProperty("a"), "one");
+		assertEquals(props.getProperty("b"), "1");
+		assertEquals(props.getProperty("c"), "1");
+		assertNull(props.getProperty("d"));
+	}
+
 }
