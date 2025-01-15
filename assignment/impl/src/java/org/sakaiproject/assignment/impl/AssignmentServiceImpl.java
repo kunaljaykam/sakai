@@ -460,10 +460,9 @@ public class AssignmentServiceImpl implements AssignmentService, EntityTransferr
         final Stream<Node> allChildrenNodes = IntStream.range(0, allChildrenNodeList.getLength()).mapToObj(allChildrenNodeList::item);
         final List<Element> assignmentElements = allChildrenNodes.filter(node -> node.getNodeType() == Node.ELEMENT_NODE).map(element -> (Element) element).collect(Collectors.toList());
 
-        Set<String> assignmentTitles = new LinkedHashSet();
-        for (Assignment assignment : getAssignmentsForContext(siteId)) {
-            assignmentTitles.add(assignment.getTitle());
-        }
+        Set<String> assignmentTitles = getAssignmentsForContext(siteId).stream()
+            .map(Assignment::getTitle) // Extract the title from each Assignment
+            .collect(Collectors.toCollection(LinkedHashSet::new)); // Collect into a LinkedHashSet
 
         int assignmentsMerged = 0;
 
