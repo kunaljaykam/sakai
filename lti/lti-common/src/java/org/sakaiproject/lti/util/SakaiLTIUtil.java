@@ -2665,10 +2665,15 @@ public class SakaiLTIUtil {
 		// Are we in the default lineitem for the content object?
 		// Check if this is as assignment placement and handle it if it is
 		if ( lineitem_key == null ) {
-			org.sakaiproject.assignment.api.model.Assignment assignment = getAssignment(site, content);
-			if ( assignment != null ) {
-				retval = handleAssignment(assignment, userId, scoreObj);
-				return retval;
+			pushAdvisor(); // Add security advisor to allow access to assignments
+			try {
+				org.sakaiproject.assignment.api.model.Assignment assignment = getAssignment(site, content);
+				if ( assignment != null ) {
+					retval = handleAssignment(assignment, userId, scoreObj);
+					return retval;
+				}
+			} finally {
+				popAdvisor(); // Remove security advisor
 			}
 			title = (String) content.get(LTIService.LTI_TITLE);
 			if (title == null || title.length() < 1) {
@@ -2687,22 +2692,27 @@ public class SakaiLTIUtil {
 			String external_id = gradebookColumn.getExternalId();
 			log.debug("external_id: {} {}", external_id);
 			if ( external_id != null && LineItemUtil.isAssignmentColumn(external_id) ) {
-				org.sakaiproject.assignment.api.AssignmentService assignmentService = ComponentManager.get(org.sakaiproject.assignment.api.AssignmentService.class);
-				org.sakaiproject.assignment.api.model.Assignment assignment;
+				pushAdvisor(); // Add security advisor to allow access to assignments
 				try {
-					org.sakaiproject.assignment.api.AssignmentReferenceReckoner.AssignmentReference assignmentReference = org.sakaiproject.assignment.api.AssignmentReferenceReckoner.reckoner().reference(external_id).reckon();
-					log.debug("assignmentReference.id {}", assignmentReference.getId());
-					assignment = assignmentService.getAssignment(assignmentReference.getId());
-				} catch (Exception e) {
-					assignment = null;
-					log.error("Unexpected error getting assignment: {}", e.toString());
-					log.debug("Stacktrace:", e);
-				}
+					org.sakaiproject.assignment.api.AssignmentService assignmentService = ComponentManager.get(org.sakaiproject.assignment.api.AssignmentService.class);
+					org.sakaiproject.assignment.api.model.Assignment assignment;
+					try {
+						org.sakaiproject.assignment.api.AssignmentReferenceReckoner.AssignmentReference assignmentReference = org.sakaiproject.assignment.api.AssignmentReferenceReckoner.reckoner().reference(external_id).reckon();
+						log.debug("assignmentReference.id {}", assignmentReference.getId());
+						assignment = assignmentService.getAssignment(assignmentReference.getId());
+					} catch (Exception e) {
+						assignment = null;
+						log.error("Unexpected error getting assignment: {}", e.toString());
+						log.debug("Stacktrace:", e);
+					}
 
-				if ( assignment != null ) {
-					log.debug("Gradebook column is owned by assignment: {}", assignment.getId());
-					retval = handleAssignment(assignment, userId, scoreObj);
-					return retval;
+					if ( assignment != null ) {
+						log.debug("Gradebook column is owned by assignment: {}", assignment.getId());
+						retval = handleAssignment(assignment, userId, scoreObj);
+						return retval;
+					}
+				} finally {
+					popAdvisor(); // Remove security advisor
 				}
 			}
 			title = gradebookColumn.getName();
