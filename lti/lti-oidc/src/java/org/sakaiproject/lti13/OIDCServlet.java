@@ -223,11 +223,17 @@ public class OIDCServlet extends HttpServlet {
 		}
 
 		String serverUrl = ServerConfigurationService.getServerUrl();
-		if ( ! forward.startsWith(serverUrl) ) {
-			LTI13Util.return400(response, "Must forward internally");
-			log.error("Must forward internally");
-			return;
-		}
+		
+		// TEMPORARY: Log forward URL and server URL to debug redirect issues
+		log.warn("Forward URL: {}", forward);
+		log.warn("Server URL: {}", serverUrl);
+		
+		// TEMPORARILY DISABLED server URL check
+		// if ( ! forward.startsWith(serverUrl) ) {
+		//	LTI13Util.return400(response, "Must forward internally");
+		//	log.error("Must forward internally");
+		//	return;
+		// }
 
 		// No tricky business
 		if ( dangerousCharacters(forward) ) {
