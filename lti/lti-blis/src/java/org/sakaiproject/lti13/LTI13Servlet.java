@@ -695,33 +695,56 @@ public class LTI13Servlet extends HttpServlet {
 	 */
 	// Provide Well Known URL
 	protected void handleWellKnown(HttpServletRequest request, HttpServletResponse response) {
+		log.debug("LTI13: handleWellKnown starting");
+		
 		String clientId = request.getParameter("clientId");
 		if ( clientId == null ) {
+			log.error("LTI13: Missing clientId parameter");
 			LTI13Util.return400(response, "Missing clientId");
 			return;
 		}
+		log.debug("LTI13: clientId={}", clientId);
 
 		String key = request.getParameter("key");
 		if ( key == null ) {
+			log.error("LTI13: Missing key parameter");
 			LTI13Util.return400(response, "Missing key");
 			return;
 		}
+		log.debug("LTI13: key={}", key);
 
 		String issuerURL = request.getParameter("issuerURL");
 		if ( issuerURL == null ) {
+			log.error("LTI13: Missing issuerURL parameter");
 			LTI13Util.return400(response, "Missing issuerURL");
 			return;
 		}
+		log.debug("LTI13: issuerURL={}", issuerURL);
 
 		String deploymentId = request.getParameter("deploymentId");
 		if ( deploymentId == null ) {
+			log.error("LTI13: Missing deploymentId parameter");
 			LTI13Util.return400(response, "Missing deploymentId");
 			return;
 		}
+		log.debug("LTI13: deploymentId={}", deploymentId);
 
-		String keySetUrl = getOurServerUrl() + "/imsblis/lti13/keyset";
-		String tokenUrl = getOurServerUrl() + "/imsblis/lti13/token/" + key;
-		String authOIDC = getOurServerUrl() + "/imsoidc/lti13/oidc_auth";
+		// Check if we should disable SSL validation for this request (for development/testing)
+		boolean allowSelfSignedCerts = ServerConfigurationService.getBoolean("lti13.allow.selfsigned", false);
+		if (allowSelfSignedCerts) {
+			log.warn("LTI13: Self-signed certificates are allowed for OpenID configuration (lti13.allow.selfsigned=true)");
+		}
+
+		String ourServerUrl = getOurServerUrl();
+		log.debug("LTI13: ourServerUrl={}", ourServerUrl);
+		
+		String keySetUrl = ourServerUrl + "/imsblis/lti13/keyset";
+		String tokenUrl = ourServerUrl + "/imsblis/lti13/token/" + key;
+		String authOIDC = ourServerUrl + "/imsoidc/lti13/oidc_auth";
+
+		log.debug("LTI13: keySetUrl={}", keySetUrl);
+		log.debug("LTI13: tokenUrl={}", tokenUrl);
+		log.debug("LTI13: authOIDC={}", authOIDC);
 
 		String sakaiVersion = ServerConfigurationService.getString("version.sakai", "2");
 
@@ -746,19 +769,23 @@ public class LTI13Servlet extends HttpServlet {
 		pc.token_endpoint = tokenUrl;
 		pc.jwks_uri = keySetUrl;
 
-		pc.registration_endpoint = getOurServerUrl() + LTI13_PATH + "registration_endpoint/" + key;
+		pc.registration_endpoint = ourServerUrl + LTI13_PATH + "registration_endpoint/" + key;
 
 		pc.lti_platform_configuration = lpc;
 
 		response.setContentType(APPLICATION_JSON);
 		try {
 			PrintWriter out = response.getWriter();
-			out.print(JacksonUtil.prettyPrint(pc));
+			String responseJson = JacksonUtil.prettyPrint(pc);
+			log.debug("LTI13: well_known response={}", responseJson);
+			out.print(responseJson);
 		} catch (Exception e) {
-			log.error(e.getMessage(), e);
+			log.error("LTI13: Error generating well_known response: {}", e.getMessage(), e);
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return;
 		}
+		
+		log.debug("LTI13: handleWellKnown completed successfully");
 	}
 
 
