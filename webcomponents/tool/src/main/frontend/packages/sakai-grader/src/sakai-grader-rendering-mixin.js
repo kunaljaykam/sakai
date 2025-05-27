@@ -148,6 +148,7 @@ export const graderRenderingMixin = Base => class extends Base {
           </sakai-lti-iframe>
         ` : nothing }
         ${this.ltiGradableLaunch && !this._submission.ltiSubmissionLaunch ? html`
+          ${console.log("LTI DEBUG: Gradable launch detected:", this.ltiGradableLaunch)}
           ${this._renderGraderLinkBlock()}
           <div class="sak-banner-info">${unsafeHTML(this._i18n.lti_grade_launch_instructions)}</div>
           <sakai-lti-iframe
