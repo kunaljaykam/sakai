@@ -2858,6 +2858,9 @@ public class SakaiLTIUtil {
 		pushAdvisor();
 		try {
 			org.sakaiproject.assignment.api.model.AssignmentSubmission submission = null;
+
+			System.out.println("LTI DEBUG: Group assignment detected: " + a.getId() + ", title=" + a.getTitle());
+			System.out.println("LTI DEBUG: Submitters: " + a.getSubmitters());
 			
 			// For group assignments, we need to find the group the user belongs to
 			if (a.getIsGroup()) {
