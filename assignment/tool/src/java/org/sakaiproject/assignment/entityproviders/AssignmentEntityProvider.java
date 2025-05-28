@@ -682,6 +682,9 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
             // LTI supports group assignments but requires a user ID as the submitter - 
             // it does not accept group IDs directly. For group assignments, we use
             // a representative user ID from the group.
+
+            log.info("submitters.size()={}", submitters.size());
+
             if (submitters.size() >= 1) {
                 // For group assignments, we need to handle multiple submitters
                 // Either select a representative submitter or use group-based submission approach
@@ -689,10 +692,12 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                 if (!assignment.getIsGroup() && submitters.size() == 1) {
                     // For individual assignments, use the first submitter
                     submitterId = submitters.toArray(new AssignmentSubmissionSubmitter[]{})[0].getSubmitter();
+                    log.info("submitterId={}", submitterId);
                 } else {
                     // For group assignments, we need to get a user ID, not a group ID
                     // Use the first submitter's ID as a representative for the group
                     submitterId = submitters.toArray(new AssignmentSubmissionSubmitter[]{})[0].getSubmitter();
+                    log.info("submitterId={}", submitterId);
                 }
                 
                 Integer contentKey = assignment.getContentId();
