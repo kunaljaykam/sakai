@@ -702,9 +702,11 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                 
                 Integer contentKey = assignment.getContentId();
                 if (StringUtils.isNotBlank(submitterId) && contentKey != null) {
+                    log.info("submitters is here ");
                     String siteId = assignment.getContext();
                     Map<String, Object> content = ltiService.getContent(contentKey.longValue(), siteId);
                     if (content != null) {
+                        log.info("content is here ");
                         String contentItem = StringUtils.trimToEmpty((String) content.get(LTIService.LTI_CONTENTITEM));
                         boolean submissionReviewAvailable = contentItem.indexOf("\"submissionReview\"") > 0;
                         
@@ -714,6 +716,7 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                         ltiSubmissionLaunch += "?for_user=" + submitterId;
                         
                         if (submissionReviewAvailable) {
+                            log.info("submissionReviewAvailable is here ");
                             ltiSubmissionLaunch = ltiSubmissionLaunch + "&message_type=content_review";
                         }
                         log.debug("ltiSubmissionLaunch={}", ltiSubmissionLaunch);
