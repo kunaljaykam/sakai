@@ -690,8 +690,29 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                 // Get a valid submitter ID regardless of group or individual assignment
                 String submitterId = null;
                 
-                // DIRECT APPROACH: For group assignments, get the group ID and then find users from that group
-                if (assignment.getIsGroup() && StringUtils.isNotBlank(as.getGroupId())) {
+                // PRIORITY 1: First try to find the actual submitter who made the submission
+                // Check for the user who has submittee=true which indicates they actually submitted it
+                if (!submitters.isEmpty()) {
+                    for (AssignmentSubmissionSubmitter submitter : submitters) {
+                        if (submitter.getSubmittee() != null && submitter.getSubmittee()) {
+                            submitterId = submitter.getSubmitter();
+                            log.info("Found actual submitter (submittee=true) with ID: {}", submitterId);
+                            break;
+                        }
+                    }
+                }
+                
+                // PRIORITY 2: If no actual submitter found, check for the submission creator/modifier
+                if (StringUtils.isBlank(submitterId)) {
+                    String creator = as.getProperties().get("CHEF:creator");
+                    if (StringUtils.isNotBlank(creator)) {
+                        submitterId = creator;
+                        log.info("Using submission creator as submitterId: {}", submitterId);
+                    }
+                }
+                
+                // PRIORITY 3: For group assignments, get a user from the group
+                if (StringUtils.isBlank(submitterId) && assignment.getIsGroup() && StringUtils.isNotBlank(as.getGroupId())) {
                     String groupId = as.getGroupId();
                     log.info("This is a group assignment with groupId: {}", groupId);
                     
@@ -714,24 +735,23 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                     }
                 }
                 
-                // If we couldn't get a submitter from the group, try from the submitters collection
+                // PRIORITY 4: If we still don't have a submitter, try any submitter from the list
                 if (StringUtils.isBlank(submitterId) && !submitters.isEmpty()) {
                     // Convert set to array to get first element safely
                     AssignmentSubmissionSubmitter[] submittersArray = submitters.toArray(new AssignmentSubmissionSubmitter[0]);
                     if (submittersArray.length > 0) {
                         submitterId = submittersArray[0].getSubmitter();
-                        log.info("Found submitterId from submitters: {}", submitterId);
+                        log.info("Found submitterId from submitters list: {}", submitterId);
                     }
                 }
                 
-                // If we still don't have a submitter, try other options
+                // PRIORITY 5: Try to use the grader as a fallback
                 if (StringUtils.isBlank(submitterId)) {
-                    // Try to use the creator of the submission as a fallback
                     submitterId = as.getGradedBy();
                     log.info("Using gradedBy as submitterId: {}", submitterId);
                 }
 
-                // Final fallback - use the first user from the site with submission rights
+                // PRIORITY 6: Final fallback - use any user from the site with submission rights
                 if (StringUtils.isBlank(submitterId)) {
                     try {
                         String siteId = assignment.getContext();
@@ -1157,11 +1177,40 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                 if (!submission.containsKey("userSubmission")) continue;
                 String ltiSubmissionLaunch = null;
                 
-                // Try to get a valid user ID from this submission
+                // Try to get a valid user ID from this submission with priority to the actual submitter
                 String submitterId = null;
                 
-                // DIRECT APPROACH: If the submission has a groupId, directly get users from that group
-                if (submission.containsKey("groupId")) {
+                // PRIORITY 1: First try to find the actual submitter who made the submission
+                // Check if we can identify the actual submitter from the submitters list
+                if (submission.containsKey("submitters")) {
+                    List<Map<String, Object>> submitters = (List<Map<String, Object>>) submission.get("submitters");
+                    if (!submitters.isEmpty()) {
+                        // Look for any marker of who actually submitted (like a boolean property)
+                        for (Map<String, Object> submitter : submitters) {
+                            if (submitter != null && submitter.get("id") != null) {
+                                // Check if this submitter has any marker of being the actual submitter
+                                // This could be a submittee property or similar
+                                if (submitter.containsKey("submittee") && Boolean.TRUE.equals(submitter.get("submittee"))) {
+                                    submitterId = (String) submitter.get("id");
+                                    log.info("Found actual submitter with ID: {}", submitterId);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // PRIORITY 2: If we couldn't identify the actual submitter, check for a creator in properties
+                if (StringUtils.isBlank(submitterId) && submission.containsKey("properties")) {
+                    Map<String, String> props = (Map<String, String>) submission.get("properties");
+                    if (props != null && props.containsKey("CHEF:creator")) {
+                        submitterId = props.get("CHEF:creator");
+                        log.info("Using submission creator from properties: {}", submitterId);
+                    }
+                }
+                
+                // PRIORITY 3: If the submission has a groupId, get a user from that group
+                if (StringUtils.isBlank(submitterId) && submission.containsKey("groupId")) {
                     String groupId = (String) submission.get("groupId");
                     if (StringUtils.isNotBlank(groupId)) {
                         log.info("This is a group submission with groupId: {}", groupId);
@@ -1180,21 +1229,21 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                     }
                 }
                 
-                // If we couldn't get a submitter from the group, try from the submitters list
+                // PRIORITY 4: If we still couldn't get a submitter, try any submitter from the list
                 if (StringUtils.isBlank(submitterId) && submission.containsKey("submitters")) {
                     List<Map<String, Object>> submitters = (List<Map<String, Object>>) submission.get("submitters");
                     if (!submitters.isEmpty()) {
                         for (Map<String, Object> submitter : submitters) {
                             if (submitter != null && submitter.containsKey("id") && submitter.get("id") != null) {
                                 submitterId = (String) submitter.get("id");
-                                log.info("Found submitterId from submission map: {}", submitterId);
+                                log.info("Using any submitter from list: {}", submitterId);
                                 break;
                             }
                         }
                     }
                 }
                 
-                // If we still don't have a submitter ID, use the first user in the site with permission
+                // PRIORITY 5: Final fallback - use any user from the site with submission rights
                 if (StringUtils.isBlank(submitterId)) {
                     Set<String> users = site.getUsersIsAllowed(SECURE_ADD_ASSIGNMENT_SUBMISSION);
                     if (!users.isEmpty()) {
