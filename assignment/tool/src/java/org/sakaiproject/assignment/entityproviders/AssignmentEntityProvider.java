@@ -690,8 +690,32 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                 // Get a valid submitter ID regardless of group or individual assignment
                 String submitterId = null;
                 
-                // First try to get a real user ID from the submitters set
-                if (!submitters.isEmpty()) {
+                // DIRECT APPROACH: For group assignments, get the group ID and then find users from that group
+                if (assignment.getIsGroup() && StringUtils.isNotBlank(as.getGroupId())) {
+                    String groupId = as.getGroupId();
+                    log.info("This is a group assignment with groupId: {}", groupId);
+                    
+                    try {
+                        // Get the site
+                        Site site = siteService.getSite(assignment.getContext());
+                        // Get the group
+                        Group group = site.getGroup(groupId);
+                        if (group != null) {
+                            // Get users from the group
+                            Set<String> groupUsers = group.getUsers();
+                            if (!groupUsers.isEmpty()) {
+                                // Use the first user from the group
+                                submitterId = groupUsers.iterator().next();
+                                log.info("Found user {} from group {}", submitterId, groupId);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Error getting users from group: {}", e.getMessage());
+                    }
+                }
+                
+                // If we couldn't get a submitter from the group, try from the submitters collection
+                if (StringUtils.isBlank(submitterId) && !submitters.isEmpty()) {
                     // Convert set to array to get first element safely
                     AssignmentSubmissionSubmitter[] submittersArray = submitters.toArray(new AssignmentSubmissionSubmitter[0]);
                     if (submittersArray.length > 0) {
@@ -700,7 +724,7 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                     }
                 }
                 
-                // If we couldn't get a submitter, try other options
+                // If we still don't have a submitter, try other options
                 if (StringUtils.isBlank(submitterId)) {
                     // Try to use the creator of the submission as a fallback
                     submitterId = as.getGradedBy();
@@ -1136,8 +1160,28 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                 // Try to get a valid user ID from this submission
                 String submitterId = null;
                 
-                // First try to extract a user ID from the submitters list
-                if (submission.containsKey("submitters")) {
+                // DIRECT APPROACH: If the submission has a groupId, directly get users from that group
+                if (submission.containsKey("groupId")) {
+                    String groupId = (String) submission.get("groupId");
+                    if (StringUtils.isNotBlank(groupId)) {
+                        log.info("This is a group submission with groupId: {}", groupId);
+                        try {
+                            Group group = site.getGroup(groupId);
+                            if (group != null) {
+                                Set<String> groupUsers = group.getUsers();
+                                if (!groupUsers.isEmpty()) {
+                                    submitterId = groupUsers.iterator().next();
+                                    log.info("Found user {} from group {}", submitterId, groupId);
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.warn("Error getting users from group {}: {}", groupId, e.getMessage());
+                        }
+                    }
+                }
+                
+                // If we couldn't get a submitter from the group, try from the submitters list
+                if (StringUtils.isBlank(submitterId) && submission.containsKey("submitters")) {
                     List<Map<String, Object>> submitters = (List<Map<String, Object>>) submission.get("submitters");
                     if (!submitters.isEmpty()) {
                         for (Map<String, Object> submitter : submitters) {
@@ -1146,22 +1190,6 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                                 log.info("Found submitterId from submission map: {}", submitterId);
                                 break;
                             }
-                        }
-                    }
-                }
-                
-                // Fallback - if the submission has a groupId, try to find users in that group
-                if (StringUtils.isBlank(submitterId) && submission.containsKey("groupId")) {
-                    String groupId = (String) submission.get("groupId");
-                    if (StringUtils.isNotBlank(groupId)) {
-                        try {
-                            Group group = site.getGroup(groupId);
-                            if (group != null && !group.getUsers().isEmpty()) {
-                                submitterId = group.getUsers().iterator().next();
-                                log.info("Found submitterId from group: {}", submitterId);
-                            }
-                        } catch (Exception e) {
-                            log.warn("Failed to get users from group {}", groupId, e);
                         }
                     }
                 }
