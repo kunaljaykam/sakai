@@ -679,15 +679,19 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
 
             // Add the SubmissionReview Launch information if this tool has requested it
             // https://www.imsglobal.org/spec/lti-ags/v2p0#submission-review-message
+            // LTI supports group assignments but requires a user ID as the submitter - 
+            // it does not accept group IDs directly. For group assignments, we use
+            // a representative user ID from the group.
             if (submitters.size() >= 1) {
                 // For group assignments, we need to handle multiple submitters
                 // Either select a representative submitter or use group-based submission approach
                 String submitterId;
-                if (assignment.getIsGroup() && StringUtils.isNotBlank(as.getGroupId())) {
-                    // For group assignments, use the group ID as the submitter ID
-                    submitterId = as.getGroupId();
-                } else {
+                if (!assignment.getIsGroup() && submitters.size() == 1) {
                     // For individual assignments, use the first submitter
+                    submitterId = submitters.toArray(new AssignmentSubmissionSubmitter[]{})[0].getSubmitter();
+                } else {
+                    // For group assignments, we need to get a user ID, not a group ID
+                    // Use the first submitter's ID as a representative for the group
                     submitterId = submitters.toArray(new AssignmentSubmissionSubmitter[]{})[0].getSubmitter();
                 }
                 
@@ -697,19 +701,12 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                     Map<String, Object> content = ltiService.getContent(contentKey.longValue(), siteId);
                     if (content != null) {
                         String contentItem = StringUtils.trimToEmpty((String) content.get(LTIService.LTI_CONTENTITEM));
-                        // Instead of parsing, the JSON we just look for a simple existance of the submission review entry
-                        // Delegate the complex understanding of the launch to SakaiLTIUtil
-                        // TODO: Eventually, Sakai's LTIService will implement a submissionReview checkbox and we should check for that here
                         boolean submissionReviewAvailable = contentItem.indexOf("\"submissionReview\"") > 0;
-
+                        
                         String ltiSubmissionLaunch = "/access/lti/site/" + siteId + "/content:" + contentKey;
                         
-                        // For group assignments, include the group ID instead of user ID
-                        if (assignment.getIsGroup() && StringUtils.isNotBlank(as.getGroupId())) {
-                            ltiSubmissionLaunch += "?for_group=" + submitterId;
-                        } else {
-                            ltiSubmissionLaunch += "?for_user=" + submitterId;
-                        }
+                        // Always use for_user parameter since LTI requires a user ID
+                        ltiSubmissionLaunch += "?for_user=" + submitterId;
                         
                         if (submissionReviewAvailable) {
                             ltiSubmissionLaunch = ltiSubmissionLaunch + "&message_type=content_review";
@@ -1104,22 +1101,17 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                 if ( ! submission.containsKey("userSubmission") ) continue;
                 String ltiSubmissionLaunch = null;
                 if (submission.containsKey("submitters")) {
-                    for (Map<String, Object> submitter: (List<Map<String, Object>>) submission.get("submitters")) {
-                        if ( submitter.get("id") != null ) {
-                            ltiSubmissionLaunch = "/access/lti/site/" + siteId + "/content:" + contentKey;
-                            
-                            // For group assignments, use the group ID
-                            if (assignment.getIsGroup() && submission.containsKey("groupId")) {
-                                ltiSubmissionLaunch += "?for_group=" + submission.get("groupId");
-                            } else {
-                                ltiSubmissionLaunch += "?for_user=" + submitter.get("id");
-                            }
+                    // For any submission (individual or group), always use the first submitter's ID
+                    // LTI requires a user ID, not a group ID
+                    List<Map<String, Object>> submitters = (List<Map<String, Object>>) submission.get("submitters");
+                    if (!submitters.isEmpty() && submitters.get(0).get("id") != null) {
+                        String submitterId = (String) submitters.get(0).get("id");
+                        ltiSubmissionLaunch = "/access/lti/site/" + siteId + "/content:" + contentKey + "?for_user=" + submitterId;
 
-                            // Instead of parsing, the JSON we just look for a simple existance of the submission review entry
-                            // Delegate the complex understanding of the launch to SakaiLTIUtil
-                            if ( contentItem.indexOf("\"submissionReview\"") > 0 ) {
-                                ltiSubmissionLaunch = ltiSubmissionLaunch + "&message_type=content_review";
-                            }
+                        // Instead of parsing, the JSON we just look for a simple existance of the submission review entry
+                        // Delegate the complex understanding of the launch to SakaiLTIUtil
+                        if (contentItem.indexOf("\"submissionReview\"") > 0) {
+                            ltiSubmissionLaunch = ltiSubmissionLaunch + "&message_type=content_review";
                         }
                     }
                 }
