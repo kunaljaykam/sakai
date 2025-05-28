@@ -2267,59 +2267,32 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
             for (AssignmentSubmissionSubmitter submitter : submitters) {
                 if (submitter.getSubmittee() != null && submitter.getSubmittee()) {
                     submitterId = submitter.getSubmitter();
-                    log.debug("Found actual submitter (submittee=true): {}", submitterId);
-                    break;
+                    log.info("Found actual submitter (submittee=true): {}", submitterId);
+                    return submitterId;
                 }
             }
         }
         
-        // Priority 2: Use submission creator from properties
-        if (StringUtils.isBlank(submitterId)) {
-            String creator = as.getProperties().get("CHEF:creator");
-            if (StringUtils.isNotBlank(creator)) {
-                submitterId = creator;
-                log.debug("Using submission creator: {}", submitterId);
-            }
-        }
-        
-        // Priority 3: For group assignments, get a user from the group
-        if (StringUtils.isBlank(submitterId) && assignment.getIsGroup() && StringUtils.isNotBlank(as.getGroupId())) {
+        // Priority 2: For group assignments, get a user from the group
+        if (assignment.getIsGroup() && StringUtils.isNotBlank(as.getGroupId())) {
             try {
                 Site site = siteService.getSite(assignment.getContext());
                 Group group = site.getGroup(as.getGroupId());
                 if (group != null && !group.getUsers().isEmpty()) {
                     submitterId = group.getUsers().iterator().next();
-                    log.debug("Using first user from group: {}", submitterId);
+                    log.info("Using first user from group: {}", submitterId);
+                    return submitterId;
                 }
             } catch (Exception e) {
                 log.warn("Error getting users from group: {}", e.getMessage());
             }
         }
         
-        // Priority 4: Use any submitter from the list
-        if (StringUtils.isBlank(submitterId) && !submitters.isEmpty()) {
+        // Priority 3: Use any submitter from the list
+        if (!submitters.isEmpty()) {
             submitterId = submitters.iterator().next().getSubmitter();
-            log.debug("Using first submitter from list: {}", submitterId);
-        }
-        
-        // Priority 5: Use the grader
-        if (StringUtils.isBlank(submitterId) && StringUtils.isNotBlank(as.getGradedBy())) {
-            submitterId = as.getGradedBy();
-            log.debug("Using gradedBy: {}", submitterId);
-        }
-        
-        // Priority 6: Use any user from the site with submission rights
-        if (StringUtils.isBlank(submitterId)) {
-            try {
-                Site site = siteService.getSite(assignment.getContext());
-                Set<String> users = site.getUsersIsAllowed(SECURE_ADD_ASSIGNMENT_SUBMISSION);
-                if (!users.isEmpty()) {
-                    submitterId = users.iterator().next();
-                    log.debug("Using user from site: {}", submitterId);
-                }
-            } catch (Exception e) {
-                log.warn("Failed to get site users: {}", e.getMessage());
-            }
+            log.info("Using first submitter from list: {}", submitterId);
+            return submitterId;
         }
         
         return submitterId;
@@ -2339,31 +2312,23 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                     if (submitter != null && submitter.get("id") != null &&
                             submitter.containsKey("submittee") && Boolean.TRUE.equals(submitter.get("submittee"))) {
                         submitterId = (String) submitter.get("id");
-                        log.debug("Found actual submitter: {}", submitterId);
-                        break;
+                        log.info("Found actual submitter: {}", submitterId);
+                        return submitterId;
                     }
                 }
             }
         }
         
-        // Priority 2: Check for creator in properties
-        if (StringUtils.isBlank(submitterId) && submission.containsKey("properties")) {
-            Map<String, String> props = (Map<String, String>) submission.get("properties");
-            if (props != null && props.containsKey("CHEF:creator")) {
-                submitterId = props.get("CHEF:creator");
-                log.debug("Using submission creator: {}", submitterId);
-            }
-        }
-        
-        // Priority 3: Get user from group
-        if (StringUtils.isBlank(submitterId) && submission.containsKey("groupId")) {
+        // Priority 2: Get user from group
+        if (submission.containsKey("groupId")) {
             String groupId = (String) submission.get("groupId");
             if (StringUtils.isNotBlank(groupId)) {
                 try {
                     Group group = site.getGroup(groupId);
                     if (group != null && !group.getUsers().isEmpty()) {
                         submitterId = group.getUsers().iterator().next();
-                        log.debug("Using user from group: {}", submitterId);
+                        log.info("Using user from group: {}", submitterId);
+                        return submitterId;
                     }
                 } catch (Exception e) {
                     log.warn("Error getting users from group: {}", e.getMessage());
@@ -2371,26 +2336,17 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
             }
         }
         
-        // Priority 4: Use any submitter
-        if (StringUtils.isBlank(submitterId) && submission.containsKey("submitters")) {
+        // Priority 3: Use any submitter
+        if (submission.containsKey("submitters")) {
             List<Map<String, Object>> submitters = (List<Map<String, Object>>) submission.get("submitters");
             if (!submitters.isEmpty()) {
                 for (Map<String, Object> submitter : submitters) {
                     if (submitter != null && submitter.containsKey("id") && submitter.get("id") != null) {
                         submitterId = (String) submitter.get("id");
-                        log.debug("Using any submitter: {}", submitterId);
-                        break;
+                        log.info("Using any submitter: {}", submitterId);
+                        return submitterId;
                     }
                 }
-            }
-        }
-        
-        // Priority 5: Use any site user
-        if (StringUtils.isBlank(submitterId)) {
-            Set<String> users = site.getUsersIsAllowed(SECURE_ADD_ASSIGNMENT_SUBMISSION);
-            if (!users.isEmpty()) {
-                submitterId = users.iterator().next();
-                log.debug("Using site user: {}", submitterId);
             }
         }
         
