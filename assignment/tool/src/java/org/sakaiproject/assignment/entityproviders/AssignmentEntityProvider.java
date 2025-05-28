@@ -2259,14 +2259,13 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
      * Prioritizes the actual submitter who made the submission
      */
     private String findValidSubmitterIdForLTI(AssignmentSubmission as, Assignment assignment) {
-        String submitterId = null;
         Set<AssignmentSubmissionSubmitter> submitters = as.getSubmitters();
         
         // Priority 1: Find the actual submitter who made the submission (submittee=true)
         if (!submitters.isEmpty()) {
             for (AssignmentSubmissionSubmitter submitter : submitters) {
                 if (submitter.getSubmittee() != null && submitter.getSubmittee()) {
-                    submitterId = submitter.getSubmitter();
+                    String submitterId = submitter.getSubmitter();
                     log.info("Found actual submitter (submittee=true): {}", submitterId);
                     return submitterId;
                 }
@@ -2279,7 +2278,7 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                 Site site = siteService.getSite(assignment.getContext());
                 Group group = site.getGroup(as.getGroupId());
                 if (group != null && !group.getUsers().isEmpty()) {
-                    submitterId = group.getUsers().iterator().next();
+                    String submitterId = group.getUsers().iterator().next();
                     log.info("Using first user from group: {}", submitterId);
                     return submitterId;
                 }
@@ -2290,43 +2289,28 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
         
         // Priority 3: Use any submitter from the list
         if (!submitters.isEmpty()) {
-            submitterId = submitters.iterator().next().getSubmitter();
+            String submitterId = submitters.iterator().next().getSubmitter();
             log.info("Using first submitter from list: {}", submitterId);
             return submitterId;
         }
         
-        return submitterId;
+        // If we get here, we couldn't find a valid submitter ID
+        log.warn("Could not find a valid submitter ID for assignment: {}", assignment.getId());
+        return null;
     }
     
     /**
      * Helper method to find a valid submitter ID for LTI from a submission Map
      */
     private String findValidSubmitterIdFromMap(Map<String, Object> submission, Site site) {
-        String submitterId = null;
-        
-        // Priority 1: Find submitter with submittee=true
-        if (submission.containsKey("submitters")) {
-            List<Map<String, Object>> submitters = (List<Map<String, Object>>) submission.get("submitters");
-            if (!submitters.isEmpty()) {
-                for (Map<String, Object> submitter : submitters) {
-                    if (submitter != null && submitter.get("id") != null &&
-                            submitter.containsKey("submittee") && Boolean.TRUE.equals(submitter.get("submittee"))) {
-                        submitterId = (String) submitter.get("id");
-                        log.info("Found actual submitter: {}", submitterId);
-                        return submitterId;
-                    }
-                }
-            }
-        }
-        
-        // Priority 2: Get user from group
+        // Priority 1: Get user from group (this is what's actually being used according to logs)
         if (submission.containsKey("groupId")) {
             String groupId = (String) submission.get("groupId");
             if (StringUtils.isNotBlank(groupId)) {
                 try {
                     Group group = site.getGroup(groupId);
                     if (group != null && !group.getUsers().isEmpty()) {
-                        submitterId = group.getUsers().iterator().next();
+                        String submitterId = group.getUsers().iterator().next();
                         log.info("Using user from group: {}", submitterId);
                         return submitterId;
                     }
@@ -2336,13 +2320,13 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
             }
         }
         
-        // Priority 3: Use any submitter
+        // Priority 2: Use any submitter
         if (submission.containsKey("submitters")) {
             List<Map<String, Object>> submitters = (List<Map<String, Object>>) submission.get("submitters");
             if (!submitters.isEmpty()) {
                 for (Map<String, Object> submitter : submitters) {
                     if (submitter != null && submitter.containsKey("id") && submitter.get("id") != null) {
-                        submitterId = (String) submitter.get("id");
+                        String submitterId = (String) submitter.get("id");
                         log.info("Using any submitter: {}", submitterId);
                         return submitterId;
                     }
@@ -2350,6 +2334,8 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
             }
         }
         
-        return submitterId;
+        // If we get here, we couldn't find a valid submitter ID
+        log.warn("Could not find a valid submitter ID for submission");
+        return null;
     }
 }
