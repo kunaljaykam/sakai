@@ -687,18 +687,42 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
 
             if (submitters.size() >= 1) {
                 // For group assignments, we need to handle multiple submitters
-                // Either select a representative submitter or use group-based submission approach
-                String submitterId;
-                if (!assignment.getIsGroup() && submitters.size() == 1) {
-                    // For individual assignments, use the first submitter
-                    submitterId = submitters.toArray(new AssignmentSubmissionSubmitter[]{})[0].getSubmitter();
-                    log.info("submitterId={}", submitterId);
-                } else {
-                    // For group assignments, we need to get a user ID, not a group ID
-                    // Use the first submitter's ID as a representative for the group
-                    submitterId = submitters.toArray(new AssignmentSubmissionSubmitter[]{})[0].getSubmitter();
-                    log.info("submitterId={}", submitterId);
+                // Get a valid submitter ID regardless of group or individual assignment
+                String submitterId = null;
+                
+                // First try to get a real user ID from the submitters set
+                if (!submitters.isEmpty()) {
+                    // Convert set to array to get first element safely
+                    AssignmentSubmissionSubmitter[] submittersArray = submitters.toArray(new AssignmentSubmissionSubmitter[0]);
+                    if (submittersArray.length > 0) {
+                        submitterId = submittersArray[0].getSubmitter();
+                        log.info("Found submitterId from submitters: {}", submitterId);
+                    }
                 }
+                
+                // If we couldn't get a submitter, try other options
+                if (StringUtils.isBlank(submitterId)) {
+                    // Try to use the creator of the submission as a fallback
+                    submitterId = as.getGradedBy();
+                    log.info("Using gradedBy as submitterId: {}", submitterId);
+                }
+
+                // Final fallback - use the first user from the site with submission rights
+                if (StringUtils.isBlank(submitterId)) {
+                    try {
+                        String siteId = assignment.getContext();
+                        Site site = siteService.getSite(siteId);
+                        Set<String> users = site.getUsersIsAllowed(SECURE_ADD_ASSIGNMENT_SUBMISSION);
+                        if (!users.isEmpty()) {
+                            submitterId = users.iterator().next();
+                            log.info("Using site user as submitterId: {}", submitterId);
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to get site users for submitterId", e);
+                    }
+                }
+                
+                log.info("Final submitterId={}", submitterId);
                 
                 Integer contentKey = assignment.getContentId();
                 if (StringUtils.isNotBlank(submitterId) && contentKey != null) {
@@ -1106,23 +1130,64 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
             String contentItem = StringUtils.trimToEmpty((String) content.get(LTIService.LTI_CONTENTITEM));
 
             for (Map<String, Object> submission : submissionMaps) {
-                if ( ! submission.containsKey("userSubmission") ) continue;
+                if (!submission.containsKey("userSubmission")) continue;
                 String ltiSubmissionLaunch = null;
+                
+                // Try to get a valid user ID from this submission
+                String submitterId = null;
+                
+                // First try to extract a user ID from the submitters list
                 if (submission.containsKey("submitters")) {
-                    // For any submission (individual or group), always use the first submitter's ID
-                    // LTI requires a user ID, not a group ID
                     List<Map<String, Object>> submitters = (List<Map<String, Object>>) submission.get("submitters");
-                    if (!submitters.isEmpty() && submitters.get(0).get("id") != null) {
-                        String submitterId = (String) submitters.get(0).get("id");
-                        ltiSubmissionLaunch = "/access/lti/site/" + siteId + "/content:" + contentKey + "?for_user=" + submitterId;
-
-                        // Instead of parsing, the JSON we just look for a simple existance of the submission review entry
-                        // Delegate the complex understanding of the launch to SakaiLTIUtil
-                        if (contentItem.indexOf("\"submissionReview\"") > 0) {
-                            ltiSubmissionLaunch = ltiSubmissionLaunch + "&message_type=content_review";
+                    if (!submitters.isEmpty()) {
+                        for (Map<String, Object> submitter : submitters) {
+                            if (submitter != null && submitter.containsKey("id") && submitter.get("id") != null) {
+                                submitterId = (String) submitter.get("id");
+                                log.info("Found submitterId from submission map: {}", submitterId);
+                                break;
+                            }
                         }
                     }
                 }
+                
+                // Fallback - if the submission has a groupId, try to find users in that group
+                if (StringUtils.isBlank(submitterId) && submission.containsKey("groupId")) {
+                    String groupId = (String) submission.get("groupId");
+                    if (StringUtils.isNotBlank(groupId)) {
+                        try {
+                            Group group = site.getGroup(groupId);
+                            if (group != null && !group.getUsers().isEmpty()) {
+                                submitterId = group.getUsers().iterator().next();
+                                log.info("Found submitterId from group: {}", submitterId);
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to get users from group {}", groupId, e);
+                        }
+                    }
+                }
+                
+                // If we still don't have a submitter ID, use the first user in the site with permission
+                if (StringUtils.isBlank(submitterId)) {
+                    Set<String> users = site.getUsersIsAllowed(SECURE_ADD_ASSIGNMENT_SUBMISSION);
+                    if (!users.isEmpty()) {
+                        submitterId = users.iterator().next();
+                        log.info("Using site user as submitterId: {}", submitterId);
+                    }
+                }
+                
+                if (StringUtils.isNotBlank(submitterId)) {
+                    ltiSubmissionLaunch = "/access/lti/site/" + siteId + "/content:" + contentKey + "?for_user=" + submitterId;
+                    
+                    // Check for submission review capability
+                    if (contentItem.indexOf("\"submissionReview\"") > 0) {
+                        ltiSubmissionLaunch = ltiSubmissionLaunch + "&message_type=content_review";
+                    }
+                    
+                    log.info("Created ltiSubmissionLaunch for user {}: {}", submitterId, ltiSubmissionLaunch);
+                } else {
+                    log.warn("Could not find a valid user ID for LTI submission launch");
+                }
+                
                 submission.put("ltiSubmissionLaunch", ltiSubmissionLaunch);
             }
         }
