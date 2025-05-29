@@ -1096,17 +1096,26 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                 if (!submission.containsKey("userSubmission")) continue;
                 String ltiSubmissionLaunch = null;
                 
-                String submitterId = findValidSubmitterIdFromMap(submission, site);
-                log.info("USAGE TRACKING: Using submitterId from findValidSubmitterIdFromMap: {} for submission with id: {}", 
-                         submitterId, submission.get("id"));
-                
-                if (StringUtils.isNotBlank(submitterId)) {
-                    ltiSubmissionLaunch = "/access/lti/site/" + siteId + "/content:" + contentKey + "?for_user=" + submitterId;
-                    
-                    // Check for submission review capability
-                    if (contentItem.indexOf("\"submissionReview\"") > 0) {
-                        ltiSubmissionLaunch = ltiSubmissionLaunch + "&message_type=content_review";
+                // Convert the map to the real submission and get the assignment so we can use findValidSubmitterIdForLTI
+                try {
+                    String submissionId = (String) submission.get("id");
+                    if (StringUtils.isNotBlank(submissionId)) {
+                        AssignmentSubmission as = assignmentService.getSubmission(submissionId);
+                        String submitterId = findValidSubmitterIdForLTI(as, assignment);
+                        log.info("USAGE TRACKING: Using submitterId from findValidSubmitterIdForLTI: {} for submission with id: {}", 
+                                submitterId, submissionId);
+                        
+                        if (StringUtils.isNotBlank(submitterId)) {
+                            ltiSubmissionLaunch = "/access/lti/site/" + siteId + "/content:" + contentKey + "?for_user=" + submitterId;
+                            
+                            // Check for submission review capability
+                            if (contentItem.indexOf("\"submissionReview\"") > 0) {
+                                ltiSubmissionLaunch = ltiSubmissionLaunch + "&message_type=content_review";
+                            }
+                        }
                     }
+                } catch (Exception e) {
+                    log.warn("Error getting submitter ID for LTI: {}", e.getMessage());
                 }
                 
                 submission.put("ltiSubmissionLaunch", ltiSubmissionLaunch);
@@ -2299,60 +2308,6 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
         
         log.warn("findValidSubmitterIdForLTI - Could not find a valid submitter ID for assignment: {}", 
                 assignment.getId());
-        return null;
-    }
-    
-    /**
-     * Helper method to find a valid submitter ID from a submission Map
-     */
-    private String findValidSubmitterIdFromMap(Map<String, Object> submission, Site site) {
-        log.info("findValidSubmitterIdFromMap called for site: {}", site.getId());
-        
-        // If it's a group submission, get a user from the group
-        if (submission.containsKey("groupId")) {
-            String groupId = (String) submission.get("groupId");
-            log.info("findValidSubmitterIdFromMap - Found groupId: {}", groupId);
-            
-            if (StringUtils.isNotBlank(groupId)) {
-                try {
-                    Group group = site.getGroup(groupId);
-                    if (group != null && !group.getUsers().isEmpty()) {
-                        String submitterId = group.getUsers().iterator().next();
-                        log.info("findValidSubmitterIdFromMap - Using user from group: {}", submitterId);
-                        return submitterId;
-                    } else {
-                        log.info("findValidSubmitterIdFromMap - Group found but has no users");
-                    }
-                } catch (Exception e) {
-                    log.warn("findValidSubmitterIdFromMap - Error getting users from group: {}", e.getMessage());
-                }
-            }
-        } else {
-            log.info("findValidSubmitterIdFromMap - No groupId found in submission");
-        }
-        
-        // Fall back to any submitter
-        if (submission.containsKey("submitters")) {
-            List<Map<String, Object>> submitters = (List<Map<String, Object>>) submission.get("submitters");
-            log.info("findValidSubmitterIdFromMap - Found {} submitters", submitters.size());
-            
-            if (!submitters.isEmpty()) {
-                for (Map<String, Object> submitter : submitters) {
-                    if (submitter != null && submitter.containsKey("id")) {
-                        String submitterId = (String) submitter.get("id");
-                        if (StringUtils.isNotBlank(submitterId)) {
-                            log.info("findValidSubmitterIdFromMap - Using submitter: {}", submitterId);
-                            return submitterId;
-                        }
-                    }
-                }
-                log.info("findValidSubmitterIdFromMap - No valid submitter ID found in submitters list");
-            }
-        } else {
-            log.info("findValidSubmitterIdFromMap - No submitters found in submission");
-        }
-        
-        log.warn("findValidSubmitterIdFromMap - Could not find a valid submitter ID for submission");
         return null;
     }
 }
