@@ -2280,31 +2280,31 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
             return submitterId;
         }
         
-        // For group assignments, get a user from the group
-        if (assignment.getIsGroup() && StringUtils.isNotBlank(as.getGroupId())) {
-            log.info("findValidSubmitterIdForLTI - Handling group assignment with groupId: {}", as.getGroupId());
-            try {
-                Site site = siteService.getSite(assignment.getContext());
-                Group group = site.getGroup(as.getGroupId());
-                if (group != null && !group.getUsers().isEmpty()) {
-                    String userId = group.getUsers().iterator().next();
-                    log.info("findValidSubmitterIdForLTI - Using first user from group: {}", userId);
-                    return userId;
-                } else {
-                    log.info("findValidSubmitterIdForLTI - Group found but has no users");
-                }
-            } catch (Exception e) {
-                log.warn("findValidSubmitterIdForLTI - Error getting users from group: {}", e.getMessage());
-            }
-        }
+        // // For group assignments, get a user from the group
+        // if (assignment.getIsGroup() && StringUtils.isNotBlank(as.getGroupId())) {
+        //     log.info("findValidSubmitterIdForLTI - Handling group assignment with groupId: {}", as.getGroupId());
+        //     try {
+        //         Site site = siteService.getSite(assignment.getContext());
+        //         Group group = site.getGroup(as.getGroupId());
+        //         if (group != null && !group.getUsers().isEmpty()) {
+        //             String userId = group.getUsers().iterator().next();
+        //             log.info("findValidSubmitterIdForLTI - Using first user from group: {}", userId);
+        //             return userId;
+        //         } else {
+        //             log.info("findValidSubmitterIdForLTI - Group found but has no users");
+        //         }
+        //     } catch (Exception e) {
+        //         log.warn("findValidSubmitterIdForLTI - Error getting users from group: {}", e.getMessage());
+        //     }
+        // }
         
-        // Fall back to any submitter from the list
-        Set<AssignmentSubmissionSubmitter> submitters = as.getSubmitters();
-        if (!submitters.isEmpty()) {
-            String userId = submitters.iterator().next().getSubmitter();
-            log.info("findValidSubmitterIdForLTI - Using first submitter from list: {}", userId);
-            return userId;
-        }
+        // // Fall back to any submitter from the list
+        // Set<AssignmentSubmissionSubmitter> submitters = as.getSubmitters();
+        // if (!submitters.isEmpty()) {
+        //     String userId = submitters.iterator().next().getSubmitter();
+        //     log.info("findValidSubmitterIdForLTI - Using first submitter from list: {}", userId);
+        //     return userId;
+        // }
         
         log.warn("findValidSubmitterIdForLTI - Could not find a valid submitter ID for assignment: {}", 
                 assignment.getId());
