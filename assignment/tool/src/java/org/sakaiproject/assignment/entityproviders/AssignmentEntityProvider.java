@@ -688,6 +688,7 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
             if (submitters.size() >= 1) {
                 // Get a valid submitter ID for LTI using our helper method
                 String submitterId = findValidSubmitterIdForLTI(as, assignment);
+                log.info("USAGE TRACKING: Using submitterId from findValidSubmitterIdForLTI: {} for submission: {}", submitterId, as.getId());
                 
                 Integer contentKey = assignment.getContentId();
                 if (StringUtils.isNotBlank(submitterId) && contentKey != null) {
@@ -1096,6 +1097,8 @@ public class AssignmentEntityProvider extends AbstractEntityProvider implements 
                 String ltiSubmissionLaunch = null;
                 
                 String submitterId = findValidSubmitterIdFromMap(submission, site);
+                log.info("USAGE TRACKING: Using submitterId from findValidSubmitterIdFromMap: {} for submission with id: {}", 
+                         submitterId, submission.get("id"));
                 
                 if (StringUtils.isNotBlank(submitterId)) {
                     ltiSubmissionLaunch = "/access/lti/site/" + siteId + "/content:" + contentKey + "?for_user=" + submitterId;
