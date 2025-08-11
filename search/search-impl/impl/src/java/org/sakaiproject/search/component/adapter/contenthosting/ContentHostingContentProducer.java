@@ -91,6 +91,9 @@ public class ContentHostingContentProducer implements EntityContentProducer, Sto
 	private int readerSizeLimit = 1024 * 1024 * 2; // (2M)
 
 	private int digesterSizeLimit = 1024 * 1024 * 5; // (5M)
+	
+	// ThreadLocal to track current reference being indexed for tool context detection
+	private static final ThreadLocal<String> currentIndexingReference = new ThreadLocal<>();
 
 	/**
 	 * A list of custom properties in the form indexkey.entitykey;indexkey.entitykey;indexkey.entitykey;
@@ -271,10 +274,12 @@ public class ContentHostingContentProducer implements EntityContentProducer, Sto
 
 	public String getContent(String ref, int minWordLenght)
 	{
-
-		log.info("Digesting " + ref);
-	
-		boolean debug = log.isDebugEnabled();
+		// Set the current reference for tool context detection
+		currentIndexingReference.set(ref);
+		try {
+			log.info("Digesting " + ref);
+		
+			boolean debug = log.isDebugEnabled();
 		ContentResource contentResource;
 		try
 		{
@@ -336,11 +341,15 @@ public class ContentHostingContentProducer implements EntityContentProducer, Sto
 						+ ref + " using " + digester, ex);
 			}
 		}
-		if (debug)
-		{
-			log.debug("ContentHosting.getContent" + ref + ":" + content);
+			if (debug)
+			{
+				log.debug("ContentHosting.getContent" + ref + ":" + content);
+			}
+			return content;
+		} finally {
+			// Clean up ThreadLocal to prevent memory leaks
+			currentIndexingReference.remove();
 		}
-		return content;
 
 	}
 
@@ -366,8 +375,11 @@ public class ContentHostingContentProducer implements EntityContentProducer, Sto
 
 	public String getTitle(String ref)
 	{
-		boolean debug = log.isDebugEnabled();
-		ContentResource contentResource;
+		// Set the current reference for tool context detection
+		currentIndexingReference.set(ref);
+		try {
+			boolean debug = log.isDebugEnabled();
+			ContentResource contentResource;
 		try
 		{
 			Reference reference = entityManager.newReference(ref);
@@ -382,14 +394,18 @@ public class ContentHostingContentProducer implements EntityContentProducer, Sto
 
 			throw new RuntimeException("Failed to resolve resource ", e);
 		}
-		ResourceProperties rp = contentResource.getProperties();
-		String displayNameProp = rp.getNamePropDisplayName();
-		String title = rp.getProperty(displayNameProp);
-		if (debug)
-		{
-			log.debug("ContentHosting.getTitle" + ref + ":" + title);
+			ResourceProperties rp = contentResource.getProperties();
+			String displayNameProp = rp.getNamePropDisplayName();
+			String title = rp.getProperty(displayNameProp);
+			if (debug)
+			{
+				log.debug("ContentHosting.getTitle" + ref + ":" + title);
+			}
+			return title;
+		} finally {
+			// Clean up ThreadLocal to prevent memory leaks
+			currentIndexingReference.remove();
 		}
-		return title;
 	}
 
 	public boolean matches(String ref)
@@ -463,19 +479,64 @@ public class ContentHostingContentProducer implements EntityContentProducer, Sto
 
 	public String getTool()
 	{
+		// Check if we have a current reference in ThreadLocal
+		String reference = currentIndexingReference.get();
+		if (reference != null) {
+			return getToolForReference(reference);
+		}
+		return "content";
+	}
+	
+	private String getToolForReference(String reference)
+	{
+		// Check if this is an attachment and extract tool context
+		if (reference != null && reference.startsWith("/content/attachment/")) {
+			String[] parts = reference.split("/");
+			if (parts.length > 4 && ContentHostingService.ATTACHMENTS_COLLECTION.equals("/" + parts[2] + "/")) {
+				String toolName = parts[4];
+				// Map tool names to search tool identifiers
+				switch (toolName) {
+					case "Calendar":
+						return "calendar";
+					case "Assignments":
+						return "assignments";
+					case "Announcements":
+						return "announcement";
+					case "Forums":
+						return "forums";
+					case "Chat":
+						return "chat";
+					case "Commons":
+						return "commons";
+					case "Lessons":
+						return "lessons";
+					case "Wiki":
+						return "wiki";
+					default:
+						return "content"; // fallback for unknown tools
+				}
+			}
+		}
 		return "content";
 	}
 
 	public String getUrl(String ref)
 	{
-		boolean debug = log.isDebugEnabled();
-		Reference reference = entityManager.newReference(ref);
-		String url = reference.getUrl();
-		if (debug)
-		{
-			log.debug("ContentHosting.getAction" + ref + ":" + url);
+		// Set the current reference for tool context detection
+		currentIndexingReference.set(ref);
+		try {
+			boolean debug = log.isDebugEnabled();
+			Reference reference = entityManager.newReference(ref);
+			String url = reference.getUrl();
+			if (debug)
+			{
+				log.debug("ContentHosting.getAction" + ref + ":" + url);
+			}
+			return url;
+		} finally {
+			// Clean up ThreadLocal to prevent memory leaks
+			currentIndexingReference.remove();
 		}
-		return url;
 	}
 
 	private String getSiteId(Reference ref)
