@@ -654,7 +654,8 @@ public class PrintHandler extends DefaultHandler implements AssessmentHandler, D
                   }
 
                   // Check for Canvas syllabus (intendeduse="syllabus")
-                  if (intendedUse != null && intendedUse.equals("syllabus")) {
+                  if (intendedUse != null && intendedUse.toLowerCase().equals("syllabus")) {
+                      System.out.println("PrintHandler: Identified Canvas syllabus resource (intendedUse=" + intendedUse + "), marking as Canvas entity");
                       isCanvasEntity = true;
                   }
 
@@ -804,8 +805,12 @@ public class PrintHandler extends DefaultHandler implements AssessmentHandler, D
               resourceXml != null ? resourceXml.getAttributeValue(TYPE) : null,
               resourceXml != null ? resourceXml.getAttributeValue(HREF) : null,
               pages != null && !pages.isEmpty() ? pages.get(pages.size() - 1).getTitle() : null);
-
+      
+      String intendedUse = resourceXml != null ? resourceXml.getAttributeValue(INTENDEDUSE) : null;
       String resourceType = ns.normType(resourceXml.getAttributeValue(TYPE));
+      System.out.println("PrintHandler: setCCItemXml called - resourceType=" + resourceType + 
+                         ", intendedUse=" + intendedUse + ", noPage=" + noPage + 
+                         ", resourceId=" + (resourceXml != null ? resourceXml.getAttributeValue(IDENTIFIER) : null));
       boolean isBank = resourceType.equals(QUESTION_BANK);
 
       // first question: is this the resource we want to use, or is there are preferable variant?
@@ -940,6 +945,7 @@ public class PrintHandler extends DefaultHandler implements AssessmentHandler, D
 
       try {
           if ((resourceType.equals(CC_WEBCONTENT) || (resourceType.equals(UNKNOWN))) && !noPage) {
+              System.out.println("PrintHandler: Processing visible webcontent resource with intendedUse: " + intendedUse);
               // note: when this code is called the actual sakai resource hasn't been created yet
               String href = resourceXml.getAttributeValue(HREF);
               // for unknown item types, may have a file with an HREF but no HREF in the actual resource
@@ -952,7 +958,6 @@ public class PrintHandler extends DefaultHandler implements AssessmentHandler, D
               String sakaiId = baseName + href;
               String extension = Validator.getFileExtension(sakaiId);
               String mime = ContentTypeImageService.getContentType(extension);
-              String intendedUse = resourceXml.getAttributeValue(INTENDEDUSE);
               SimplePageItem item = simplePageToolDao.makeItem(page.getPageId(), seq, SimplePageItem.RESOURCE, sakaiId, title);
               item.setHtml(mime);
               item.setSameWindow(open_same_window);
@@ -1003,8 +1008,71 @@ public class PrintHandler extends DefaultHandler implements AssessmentHandler, D
                   intendedUse = intendedUse.toLowerCase();
                   if (intendedUse.equals("lessonplan"))
                       item.setDescription(simplePageBean.getMessageLocator().getMessage("simplepage.import_cc_lessonplan"));
-                  else if (intendedUse.equals("syllabus"))
+                  else if (intendedUse.equals("syllabus")) {
                       item.setDescription(simplePageBean.getMessageLocator().getMessage("simplepage.import_cc_syllabus"));
+                      System.out.println("PrintHandler: Found visible syllabus resource, attempting to import with intendedUse: " + intendedUse);
+                      
+                      // Handle Canvas syllabus import
+                      if (syllabusManager != null) {
+                          System.out.println("PrintHandler: SyllabusManager is available, proceeding with visible syllabus import");
+                          try {
+                              String syllabusResourceId = resourceXml.getAttributeValue(IDENTIFIER);
+                              String syllabusTitle = title != null ? title : "Canvas Syllabus";
+                              if (syllabusTitle == null) syllabusTitle = "Canvas Syllabus";
+                              
+                              // Find HTML file in resource
+                              String syllabusContent = "";
+                              List<Element> files = resourceXml.getChildren(FILE, ns.getNs());
+                              System.out.println("PrintHandler: Visible syllabus resource has " + files.size() + " files");
+                              for (Element file : files) {
+                                  String fileHref = file.getAttributeValue(HREF);
+                                  System.out.println("PrintHandler: Checking visible syllabus file: " + fileHref);
+                                  if (fileHref != null && fileHref.endsWith(".html")) {
+                                      System.out.println("PrintHandler: Loading HTML content from visible syllabus file: " + fileHref);
+                                      try (InputStream htmlStream = loader.getFile(fileHref)) {
+                                          if (htmlStream != null) {
+                                              byte[] buffer = new byte[8096];
+                                              StringBuilder sb = new StringBuilder();
+                                              int n;
+                                              while ((n = htmlStream.read(buffer)) > 0) {
+                                                  sb.append(new String(buffer, 0, n, StandardCharsets.UTF_8));
+                                              }
+                                              syllabusContent = sb.toString();
+                                              System.out.println("PrintHandler: Loaded " + syllabusContent.length() + " characters of visible syllabus content");
+                                              break;
+                                          } else {
+                                              System.out.println("PrintHandler: HTML stream was null for visible syllabus file: " + fileHref);
+                                          }
+                                      } catch (Exception e) {
+                                          log.warn("Failed to load visible syllabus HTML: {}", fileHref, e);
+                                          System.out.println("PrintHandler: Exception loading visible syllabus HTML: " + e.getMessage());
+                                      }
+                                  }
+                              }
+                              
+                              // Create or get syllabus item for site
+                              SyllabusItem syllabusItem = syllabusManager.getSyllabusItemByContextId(siteId);
+                              if (syllabusItem == null) {
+                                  syllabusItem = syllabusManager.createSyllabusItem(simplePageBean.getCurrentUserId(), siteId, null);
+                              }
+                              
+                              // Create syllabus data entry
+                              int position = syllabusManager.findLargestSyllabusPosition(syllabusItem) + 1;
+                              syllabusManager.createSyllabusDataObject(syllabusTitle, position,
+                                      syllabusContent, "yes", SyllabusData.ITEM_POSTED, "none", null, null, false, null, null, syllabusItem);
+                              
+                              log.debug("Created Canvas syllabus entry from visible resource: {}", syllabusTitle);
+                              System.out.println("PrintHandler: Successfully created syllabus entry from visible resource: " + syllabusTitle);
+                              
+                          } catch (Exception e) {
+                              log.warn("Failed to import visible Canvas syllabus: {}", e.getMessage(), e);
+                              System.out.println("PrintHandler: Exception during visible syllabus import: " + e.getMessage());
+                              e.printStackTrace();
+                          }
+                      } else {
+                          System.out.println("PrintHandler: SyllabusManager is NULL - cannot import visible syllabus content");
+                      }
+                  }
                   else if (assigntool != null && intendedUse.equals("assignment")) {
                       String fileName = getFileName(resourceXml);
 
@@ -1028,7 +1096,7 @@ public class PrintHandler extends DefaultHandler implements AssessmentHandler, D
               }
               sequences.set(top, seq + 1);
           } else if (resourceType.equals(CC_WEBCONTENT) || resourceType.equals(UNKNOWN)) { // i.e. hidden. if it's an assignment have to load it
-              String intendedUse = resourceXml.getAttributeValue(INTENDEDUSE);
+              System.out.println("PrintHandler: Processing webcontent/unknown resource with intendedUse: " + intendedUse);
               if (assigntool != null && intendedUse != null && intendedUse.equals("assignment")) {
                   String fileName = getFileName(resourceXml);
                   if (itemsAdded.get(fileName) == null) {
@@ -1043,9 +1111,11 @@ public class PrintHandler extends DefaultHandler implements AssessmentHandler, D
                       String atitle = simplePageBean.getMessageLocator().getMessage("simplepage.importcc-assigntitle").replace("{}", (assignmentNumber++).toString());
                       String assignmentId = a.importObject(atitle, sakaiId, mime, true); // sakaiid for assignment
                   }
-              } else if ("syllabus".equals(intendedUse)) {
+              } else if (intendedUse != null && "syllabus".equals(intendedUse.toLowerCase())) {
+                  System.out.println("PrintHandler: Found syllabus resource, attempting to import with intendedUse: " + intendedUse);
                   // Handle Canvas syllabus import
                   if (syllabusManager != null) {
+                      System.out.println("PrintHandler: SyllabusManager is available, proceeding with syllabus import");
                       try {
                           String syllabusResourceId = resourceXml.getAttributeValue(IDENTIFIER);
                           String syllabusTitle = itemXml != null ? itemXml.getChildText(CC_ITEM_TITLE, ns.getNs()) : "Canvas Syllabus";
@@ -1054,9 +1124,12 @@ public class PrintHandler extends DefaultHandler implements AssessmentHandler, D
                           // Find HTML file in resource
                           String syllabusContent = "";
                           List<Element> files = resourceXml.getChildren(FILE, ns.getNs());
+                          System.out.println("PrintHandler: Hidden syllabus resource has " + files.size() + " files");
                           for (Element file : files) {
                               String fileHref = file.getAttributeValue(HREF);
+                              System.out.println("PrintHandler: Checking hidden syllabus file: " + fileHref);
                               if (fileHref != null && fileHref.endsWith(".html")) {
+                                  System.out.println("PrintHandler: Loading HTML content from hidden syllabus file: " + fileHref);
                                   try (InputStream htmlStream = loader.getFile(fileHref)) {
                                       if (htmlStream != null) {
                                           byte[] buffer = new byte[8096];
@@ -1066,10 +1139,14 @@ public class PrintHandler extends DefaultHandler implements AssessmentHandler, D
                                               sb.append(new String(buffer, 0, n, StandardCharsets.UTF_8));
                                           }
                                           syllabusContent = sb.toString();
+                                          System.out.println("PrintHandler: Loaded " + syllabusContent.length() + " characters of hidden syllabus content");
                                           break;
+                                      } else {
+                                          System.out.println("PrintHandler: HTML stream was null for hidden syllabus file: " + fileHref);
                                       }
                                   } catch (Exception e) {
                                       log.warn("Failed to load syllabus HTML: {}", fileHref, e);
+                                      System.out.println("PrintHandler: Exception loading hidden syllabus HTML: " + e.getMessage());
                                   }
                               }
                           }
@@ -1086,10 +1163,15 @@ public class PrintHandler extends DefaultHandler implements AssessmentHandler, D
                                   syllabusContent, "yes", SyllabusData.ITEM_POSTED, "none", null, null, false, null, null, syllabusItem);
                           
                           log.debug("Created Canvas syllabus entry: {}", syllabusTitle);
+                          System.out.println("PrintHandler: Successfully created syllabus entry: " + syllabusTitle);
                           
                       } catch (Exception e) {
                           log.warn("Failed to import Canvas syllabus: {}", e.getMessage(), e);
+                          System.out.println("PrintHandler: Exception during syllabus import: " + e.getMessage());
+                          e.printStackTrace();
                       }
+                  } else {
+                      System.out.println("PrintHandler: SyllabusManager is NULL - cannot import syllabus content");
                   }
               } else {
                   // Handle Canvas wiki content import as Lessons pages
@@ -1488,6 +1570,68 @@ public class PrintHandler extends DefaultHandler implements AssessmentHandler, D
                       if (!roles.isEmpty()) simplePageBean.setItemGroups(item, roles.toArray(new String[0]));
                       sequences.set(top, seq + 1);
                   }
+              }
+          } else if (resourceType.equals(LAR) && intendedUse != null && "syllabus".equals(intendedUse.toLowerCase())) {
+              // Handle Canvas syllabus (learning-application-resource with intendeduse="syllabus")
+              System.out.println("PrintHandler: Found LAR syllabus resource, attempting to import");
+              if (syllabusManager != null) {
+                  System.out.println("PrintHandler: SyllabusManager is available, proceeding with LAR syllabus import");
+                  try {
+                      String syllabusResourceId = resourceXml.getAttributeValue(IDENTIFIER);
+                      String syllabusTitle = itemXml != null ? itemXml.getChildText(CC_ITEM_TITLE, ns.getNs()) : "Canvas Syllabus";
+                      if (syllabusTitle == null) syllabusTitle = "Canvas Syllabus";
+                      
+                      // Find HTML file in resource
+                      String syllabusContent = "";
+                      List<Element> files = resourceXml.getChildren(FILE, ns.getNs());
+                      System.out.println("PrintHandler: LAR syllabus resource has " + files.size() + " files");
+                      for (Element file : files) {
+                          String fileHref = file.getAttributeValue(HREF);
+                          System.out.println("PrintHandler: Checking LAR syllabus file: " + fileHref);
+                          if (fileHref != null && fileHref.endsWith(".html")) {
+                              System.out.println("PrintHandler: Loading HTML content from LAR syllabus file: " + fileHref);
+                              try (InputStream htmlStream = loader.getFile(fileHref)) {
+                                  if (htmlStream != null) {
+                                      byte[] buffer = new byte[8096];
+                                      StringBuilder sb = new StringBuilder();
+                                      int n;
+                                      while ((n = htmlStream.read(buffer)) > 0) {
+                                          sb.append(new String(buffer, 0, n, StandardCharsets.UTF_8));
+                                      }
+                                      syllabusContent = sb.toString();
+                                      System.out.println("PrintHandler: Loaded " + syllabusContent.length() + " characters of LAR syllabus content");
+                                      break;
+                                  } else {
+                                      System.out.println("PrintHandler: HTML stream was null for LAR syllabus file: " + fileHref);
+                                  }
+                              } catch (Exception e) {
+                                  log.warn("Failed to load LAR syllabus HTML: {}", fileHref, e);
+                                  System.out.println("PrintHandler: Exception loading LAR syllabus HTML: " + e.getMessage());
+                              }
+                          }
+                      }
+                      
+                      // Create or get syllabus item for site
+                      SyllabusItem syllabusItem = syllabusManager.getSyllabusItemByContextId(siteId);
+                      if (syllabusItem == null) {
+                          syllabusItem = syllabusManager.createSyllabusItem(simplePageBean.getCurrentUserId(), siteId, null);
+                      }
+                      
+                      // Create syllabus data entry
+                      int position = syllabusManager.findLargestSyllabusPosition(syllabusItem) + 1;
+                      syllabusManager.createSyllabusDataObject(syllabusTitle, position,
+                              syllabusContent, "yes", SyllabusData.ITEM_POSTED, "none", null, null, false, null, null, syllabusItem);
+                      
+                      log.debug("Created Canvas syllabus entry from LAR resource: {}", syllabusTitle);
+                      System.out.println("PrintHandler: Successfully created syllabus entry from LAR resource: " + syllabusTitle);
+                      
+                  } catch (Exception e) {
+                      log.warn("Failed to import Canvas syllabus from LAR: {}", e.getMessage(), e);
+                      System.out.println("PrintHandler: Exception during LAR syllabus import: " + e.getMessage());
+                      e.printStackTrace();
+                  }
+              } else {
+                  System.out.println("PrintHandler: SyllabusManager is NULL - cannot import LAR syllabus content");
               }
           } else if (resourceType.equals(ASSIGNMENT)) {
               Element assignXml = null;
