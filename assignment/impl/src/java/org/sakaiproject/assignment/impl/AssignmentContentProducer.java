@@ -61,22 +61,27 @@ public class AssignmentContentProducer implements EntityContentProducer {
     private SiteService siteService;
     private TransactionTemplate transactionTemplate;
 
-    private List<String> addingEvents = new ArrayList<>();
-    private List<String> removingEvents = new ArrayList<>();
+    // Events that trigger adding/updating content in the search index
+    private static final List<String> ADDING_EVENTS = List.of(
+            AssignmentConstants.EVENT_ADD_ASSIGNMENT,
+            AssignmentConstants.EVENT_ADD_ASSIGNMENT_CONTENT,
+            AssignmentConstants.EVENT_UPDATE_ASSIGNMENT,
+            AssignmentConstants.EVENT_UPDATE_ASSIGNMENT_TITLE
+    );
+
+    // Events that trigger removing content from the search index
+    private static final List<String> REMOVING_EVENTS = List.of(
+            AssignmentConstants.EVENT_REMOVE_ASSIGNMENT,
+            AssignmentConstants.EVENT_REMOVE_ASSIGNMENT_CONTENT
+    );
 
     public void init() {
-
-        if (serverConfigurationService.getBoolean("search.enable", false)) {
-            addingEvents.add(AssignmentConstants.EVENT_ADD_ASSIGNMENT);
-            addingEvents.add(AssignmentConstants.EVENT_ADD_ASSIGNMENT_CONTENT);
-            addingEvents.add(AssignmentConstants.EVENT_UPDATE_ASSIGNMENT);
-            addingEvents.add(AssignmentConstants.EVENT_UPDATE_ASSIGNMENT_TITLE);
-            removingEvents.add(AssignmentConstants.EVENT_REMOVE_ASSIGNMENT);
-            removingEvents.add(AssignmentConstants.EVENT_REMOVE_ASSIGNMENT_CONTENT);
-            addingEvents.forEach(e -> searchService.registerFunction(e));
-            removingEvents.forEach(e -> searchService.registerFunction(e));
-            searchIndexBuilder.registerEntityContentProducer(this);
-        }
+        // Register all events with the search service
+        ADDING_EVENTS.forEach(searchService::registerFunction);
+        REMOVING_EVENTS.forEach(searchService::registerFunction);
+        
+        // Register this content producer with the search index builder
+        searchIndexBuilder.registerEntityContentProducer(this);
     }
 
     public boolean isContentFromReader(String reference) {
@@ -155,8 +160,8 @@ public class AssignmentContentProducer implements EntityContentProducer {
 
         String evt = event.getEvent();
 
-        if (addingEvents.contains(evt)) return SearchBuilderItem.ACTION_ADD;
-        if (removingEvents.contains(evt)) return SearchBuilderItem.ACTION_DELETE;
+        if (ADDING_EVENTS.contains(evt)) return SearchBuilderItem.ACTION_ADD;
+        if (REMOVING_EVENTS.contains(evt)) return SearchBuilderItem.ACTION_DELETE;
 
         return SearchBuilderItem.ACTION_UNKNOWN;
     }
@@ -164,7 +169,7 @@ public class AssignmentContentProducer implements EntityContentProducer {
     public boolean matches(Event event) {
 
         String evt = event.getEvent();
-        return addingEvents.contains(evt) || removingEvents.contains(evt);
+        return ADDING_EVENTS.contains(evt) || REMOVING_EVENTS.contains(evt);
     }
 
     public String getTool() {
