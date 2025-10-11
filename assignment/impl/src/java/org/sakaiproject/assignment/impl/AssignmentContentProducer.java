@@ -61,24 +61,24 @@ public class AssignmentContentProducer implements EntityContentProducer {
     private SiteService siteService;
     private TransactionTemplate transactionTemplate;
 
-    // Events that trigger adding/updating content in the search index
-    private static final List<String> ADDING_EVENTS = List.of(
-            AssignmentConstants.EVENT_ADD_ASSIGNMENT,
-            AssignmentConstants.EVENT_ADD_ASSIGNMENT_CONTENT,
-            AssignmentConstants.EVENT_UPDATE_ASSIGNMENT,
-            AssignmentConstants.EVENT_UPDATE_ASSIGNMENT_TITLE
-    );
-
-    // Events that trigger removing content from the search index
-    private static final List<String> REMOVING_EVENTS = List.of(
-            AssignmentConstants.EVENT_REMOVE_ASSIGNMENT,
-            AssignmentConstants.EVENT_REMOVE_ASSIGNMENT_CONTENT
+    // Map of events to their corresponding search index actions
+    private static final Map<String, Integer> EVENT_ACTIONS = Map.of(
+            AssignmentConstants.EVENT_ADD_ASSIGNMENT, SearchBuilderItem.ACTION_ADD,
+            AssignmentConstants.EVENT_ADD_ASSIGNMENT_CONTENT, SearchBuilderItem.ACTION_ADD,
+            AssignmentConstants.EVENT_UPDATE_ASSIGNMENT, SearchBuilderItem.ACTION_ADD,
+            AssignmentConstants.EVENT_UPDATE_ASSIGNMENT_TITLE, SearchBuilderItem.ACTION_ADD,
+            AssignmentConstants.EVENT_REMOVE_ASSIGNMENT, SearchBuilderItem.ACTION_DELETE,
+            AssignmentConstants.EVENT_REMOVE_ASSIGNMENT_CONTENT, SearchBuilderItem.ACTION_DELETE
     );
 
     public void init() {
+        // Only register if search is enabled
+        if (!serverConfigurationService.getBoolean("search.enable", false)) {
+            return;
+        }
+        
         // Register all events with the search service
-        ADDING_EVENTS.forEach(searchService::registerFunction);
-        REMOVING_EVENTS.forEach(searchService::registerFunction);
+        EVENT_ACTIONS.keySet().forEach(searchService::registerFunction);
         
         // Register this content producer with the search index builder
         searchIndexBuilder.registerEntityContentProducer(this);
@@ -157,19 +157,11 @@ public class AssignmentContentProducer implements EntityContentProducer {
     }
 
     public Integer getAction(Event event) {
-
-        String evt = event.getEvent();
-
-        if (ADDING_EVENTS.contains(evt)) return SearchBuilderItem.ACTION_ADD;
-        if (REMOVING_EVENTS.contains(evt)) return SearchBuilderItem.ACTION_DELETE;
-
-        return SearchBuilderItem.ACTION_UNKNOWN;
+        return EVENT_ACTIONS.getOrDefault(event.getEvent(), SearchBuilderItem.ACTION_UNKNOWN);
     }
 
     public boolean matches(Event event) {
-
-        String evt = event.getEvent();
-        return ADDING_EVENTS.contains(evt) || REMOVING_EVENTS.contains(evt);
+        return EVENT_ACTIONS.containsKey(event.getEvent());
     }
 
     public String getTool() {
