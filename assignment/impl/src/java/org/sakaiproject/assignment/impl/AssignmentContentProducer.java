@@ -72,11 +72,6 @@ public class AssignmentContentProducer implements EntityContentProducer {
     );
 
     public void init() {
-        // Only register if search is enabled
-        if (!serverConfigurationService.getBoolean("search.enable", false)) {
-            return;
-        }
-        
         // Register all events with the search service
         EVENT_ACTIONS.keySet().forEach(searchService::registerFunction);
         
