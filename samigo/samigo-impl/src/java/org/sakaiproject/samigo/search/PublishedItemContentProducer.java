@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.sakaiproject.entity.api.EntityManager;
 import org.sakaiproject.entitybroker.EntityReference;
@@ -65,6 +66,11 @@ public class PublishedItemContentProducer implements EntityContentProducer, Enti
         
         // Register this content producer with the search index builder
         searchIndexBuilder.registerEntityContentProducer(this);
+    }
+
+    @Override
+    public Set<String> getTriggerFunctions() {
+        return EVENT_ACTIONS.keySet();
     }
 
 

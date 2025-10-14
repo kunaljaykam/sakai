@@ -23,6 +23,7 @@ package org.sakaiproject.component.app.syllabus;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;

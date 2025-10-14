@@ -25,6 +25,7 @@ import java.io.Reader;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.sakaiproject.api.common.edu.person.SakaiPerson;
 import org.sakaiproject.api.common.edu.person.SakaiPersonManager;
@@ -35,6 +36,7 @@ import org.sakaiproject.profile2.api.ProfileConstants;
 import org.sakaiproject.search.api.EntityContentProducer;
 import org.sakaiproject.search.api.EntityContentProducerEvents;
 import org.sakaiproject.search.api.SearchIndexBuilder;
+import org.sakaiproject.search.api.SearchService;
 import org.sakaiproject.search.model.SearchBuilderItem;
 import org.sakaiproject.user.api.User;
 import org.sakaiproject.user.api.UserDirectoryService;
@@ -82,6 +84,11 @@ public class ProfileContentProducer implements EntityContentProducer, EntityCont
         
         // Register this content producer with the search index builder
         searchIndexBuilder.registerEntityContentProducer(this);
+    }
+
+    @Override
+    public Set<String> getTriggerFunctions() {
+        return EVENT_ACTIONS.keySet();
     }
 
     public boolean canRead(String ref) {
