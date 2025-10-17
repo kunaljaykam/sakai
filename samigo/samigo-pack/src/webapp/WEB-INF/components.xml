@@ -430,6 +430,9 @@
              init-method="init">
        <property name="entityManager" ref="org.sakaiproject.entity.api.EntityManager" />
        <property name="entityProviderManager" ref="org.sakaiproject.entitybroker.entityprovider.EntityProviderManager"/>
+       <property name="searchIndexBuilder" ref="org.sakaiproject.search.api.SearchIndexBuilder"/>
+       <property name="searchService" ref="org.sakaiproject.search.api.SearchService"/>
+       <property name="serverConfigurationService" ref="org.sakaiproject.component.api.ServerConfigurationService"/>
     </bean>
 
     <bean id="org.sakaiproject.samigo.search.PublishedItemContentProducer"
@@ -437,6 +440,9 @@
           init-method="init">
         <property name="entityManager" ref="org.sakaiproject.entity.api.EntityManager" />
         <property name="entityProviderManager" ref="org.sakaiproject.entitybroker.entityprovider.EntityProviderManager"/>
+        <property name="searchIndexBuilder" ref="org.sakaiproject.search.api.SearchIndexBuilder"/>
+        <property name="searchService" ref="org.sakaiproject.search.api.SearchService"/>
+        <property name="serverConfigurationService" ref="org.sakaiproject.component.api.ServerConfigurationService"/>
     </bean>
 
    <!--  Add a job to auto-submit assessments -->
