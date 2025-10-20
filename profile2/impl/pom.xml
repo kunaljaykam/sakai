@@ -90,8 +90,6 @@
       <groupId>org.sakaiproject.kernel</groupId>
       <artifactId>sakai-kernel-test</artifactId>
     </dependency>
-    <!-- Ensure OpenSearch types are available on the test runtime classpath
-         so Mockito and any SearchService references can load successfully. -->
     <dependency>
       <groupId>org.opensearch</groupId>
       <artifactId>opensearch</artifactId>

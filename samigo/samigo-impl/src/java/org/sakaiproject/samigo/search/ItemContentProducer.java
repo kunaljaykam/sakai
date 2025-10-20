@@ -29,7 +29,6 @@ import org.sakaiproject.entity.api.EntityManager;
 import org.sakaiproject.entitybroker.EntityReference;
 import org.sakaiproject.entitybroker.entityprovider.EntityProviderManager;
 import org.sakaiproject.event.api.Event;
-import org.sakaiproject.component.api.ServerConfigurationService;
 import org.sakaiproject.search.api.EntityContentProducer;
 import org.sakaiproject.search.api.EntityContentProducerEvents;
 import org.sakaiproject.search.api.SearchIndexBuilder;
@@ -52,7 +51,6 @@ public class ItemContentProducer implements EntityContentProducer, EntityContent
     @Setter EntityProviderManager entityProviderManager;
     @Setter SearchIndexBuilder searchIndexBuilder;
     @Setter SearchService searchService;
-    @Setter ServerConfigurationService serverConfigurationService;
     AssessmentService assessmentService  = new AssessmentService();
 
     // Map of events to their corresponding search index actions
