@@ -53,13 +53,21 @@ public class ItemContentProducer implements EntityContentProducer, EntityContent
     @Setter SearchService searchService;
     AssessmentService assessmentService  = new AssessmentService();
 
+    /**
+     * Custom action code for site.upd events.
+     * When this action is returned, QuestionElasticSearchIndexBuilder will delete all
+     * site items if the site was deleted or softly-deleted.
+     * @see org.sakaiproject.samigo.search.QuestionElasticSearchIndexBuilder#validateIndexAction
+     */
+    public static final Integer ACTION_SITE_DELETE_IF_REMOVED = 100;
+
     // Map of events to their corresponding search index actions
     private static final Map<String, Integer> EVENT_ACTIONS = Map.of(
             "sam.assessment.saveitem", SearchBuilderItem.ACTION_ADD,
             "sam.assessment.item.delete", SearchBuilderItem.ACTION_DELETE,
             "sam.questionpool.deleteitem", SearchBuilderItem.ACTION_DELETE,
             "sam.assessment.unindexitem", SearchBuilderItem.ACTION_DELETE,
-            "site.upd", 100
+            "site.upd", ACTION_SITE_DELETE_IF_REMOVED
     );
 
     public void init() {
