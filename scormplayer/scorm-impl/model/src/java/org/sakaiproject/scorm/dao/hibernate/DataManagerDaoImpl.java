@@ -140,7 +140,7 @@ public class DataManagerDaoImpl extends HibernateDaoSupport implements DataManag
 	@Override
 	public IDataManager load(long id)
 	{
-		return (IDataManager) getHibernateTemplate().load(SCODataManager.class, id);
+		return (IDataManager) getHibernateTemplate().get(SCODataManager.class, id);
 	}
 
 	@Override
