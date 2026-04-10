@@ -4,13 +4,13 @@
     document.querySelectorAll('.sakai-table-searchFilter-searchField[data-search-url]').forEach(field => {
         const clearBtn = field.nextElementSibling;
         let debounceTimer;
+        let running = false; // true while a fetch is in-flight
+        let queued  = null;  // URL of the next fetch to run (latest wins)
 
-        const doFetch = async (url) => {
-            if (!url) return;
-            field._ac?.abort();
-            field._ac = new AbortController();
+        const run = async (url) => {
+            running = true;
             try {
-                const resp = await fetch(url, { credentials: 'same-origin', signal: field._ac.signal });
+                const resp = await fetch(url, { credentials: 'same-origin', headers: { 'X-Sakai-Fragment': '1' } });
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const tmp = document.createElement('div');
                 tmp.innerHTML = await resp.text();
@@ -30,7 +30,24 @@
                 history.replaceState(null, '', url);
                 document.dispatchEvent(new CustomEvent('sfp:updated'));
             } catch (e) {
-                if (e.name !== 'AbortError') location = url;
+                location = url;
+            } finally {
+                running = false;
+                // Pick up the next queued search, if any
+                if (queued !== null) {
+                    const next = queued;
+                    queued = null;
+                    run(next);
+                }
+            }
+        };
+
+        const doFetch = (url) => {
+            if (!url) return;
+            if (running) {
+                queued = url; // replace any previously queued URL — latest wins
+            } else {
+                run(url);
             }
         };
 

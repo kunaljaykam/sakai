@@ -22,8 +22,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.NumberFormat;
@@ -1740,6 +1738,7 @@ public class SiteAction extends PagedResourceActionII {
 			context.put("totalPageNumber", Integer.valueOf(totalPageNumber(state)));
 			context.put("searchString", state.getAttribute(STATE_SEARCH));
 			context.put("form_search", FORM_SEARCH);
+			context.put("isFragment", "1".equals(data.getRequest().getHeader("X-Sakai-Fragment")));
 			context.put("formPageNumber", FORM_PAGE_NUMBER);
 			context.put("prev_page_exists", state
 					.getAttribute(STATE_PREV_PAGE_EXISTS));
@@ -5095,14 +5094,7 @@ public class SiteAction extends PagedResourceActionII {
 		SessionState state = ((JetspeedRunData) data)
 				.getPortletSessionState(((JetspeedRunData) data).getJs_peid());
 
-		// read the search form field into the state object
 		String search = StringUtils.trimToNull(data.getParameters().getString(FORM_SEARCH));
-		//The search input has been encoded and should be decoded.
-		try {
-			search = URLDecoder.decode(search, StandardCharsets.UTF_8.toString());
-		} catch(UnsupportedEncodingException ex) {
-			log.error("Error decoding the input search '{}'.", search);
-		}
 		resetPaging(state);
 		// set the flag to go to the prev page on the next list
 		if (StringUtils.isBlank(search)) {

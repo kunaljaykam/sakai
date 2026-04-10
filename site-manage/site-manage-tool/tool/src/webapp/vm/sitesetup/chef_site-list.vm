@@ -1,4 +1,85 @@
 ##<!-- $Header: /cvs/sakai2/legacy/tools/src/webapp/vm/sitesetup/chef_site-list.vm,v 1.3 2005/05/28 03:04:36 ggolden.umich.edu Exp $ -->
+#macro(siteListTableRows)
+	#set ($siteCount=0)
+	#foreach ($site in $sites)
+		#set ($siteCount=$siteCount + 1)
+		#set ($properties = $site.getProperties())
+
+		#if($site.SoftlyDeleted)
+			<tr class="siteListSoftlyDeleted">
+		#else
+			<tr>
+		#end
+			<td headers="checkbox" class="screenOnly attach">
+				#if ($service.allowUpdateSite($site.Id))
+					<input type="checkbox" name="selectedMembers" value="$formattedText.escapeHtml($site.getId())" id="site$siteCount" class="siteSelectCheckbox" />
+					<label class="skip" for="site$siteCount">Select $formattedText.escapeHtml($site.getTitle())</label>
+				#end
+			</td>
+			<td headers="title">
+				#if (!$service.allowAccessSite($site.Id))
+					<label class="unpublishedLabel">$formattedText.escapeHtml($site.getTitle())</label>
+				#else
+					<a href="$site.Url" target="_top">$formattedText.escapeHtml($site.getTitle())</a>
+				#end
+				<div id="dialog_$site.Id"></div>
+				<a href="#" id="$site.Id" class="getSiteDesc" title="$tlang.getString('list.moreinfotooltip')">
+					<img src="#imageLink("sakai/information_gray.png")" border="0" title="$tlang.getString('list.moreinfotooltip')" alt="$tlang.getString('list.moreinfotooltip')" />
+				</a>
+			</td>
+			#if($show_id_column)
+				<td headers="id" class="d-none d-sm-table-cell">
+					$formattedText.escapeHtml($site.getId())
+				</td>
+			#end
+			<td headers="type" class="d-none d-sm-table-cell">
+				#set($type="")
+				#set($type = $site.getType())
+				$!type
+			</td>
+			<td headers="createdBy" class="d-none d-sm-table-cell">
+				#if ($site.CreatedBy)
+					$formattedText.escapeHtml($site.CreatedBy.DisplayId)
+				#end
+			</td>
+			<td headers="term" class="d-none d-sm-table-cell">
+				#if($!courseSiteTypeStrings.contains($site.getType()))
+					#set($term = "")
+					#set($term = $properties.getProperty('term'))
+					$!term
+				#end
+			</td>
+			<td headers="published">
+				#if($site.isSoftlyDeleted())
+					$tlang.getString("list.softlydeleted")
+				#elseif($site.isPublished())
+					$tlang.getString("list.publi")
+				#else
+					$tlang.getString("list.unpub")
+				#end
+			</td>
+			<td headers="createdOn">
+				#if ($site.CreatedDate) $userTimeService.dateTimeFormat($site.CreatedDate, $tlang.Locale, 2) #end
+			</td>
+		</tr>
+	#end
+	#if ($sites.isEmpty())
+		<tr><td colspan="99">
+			<div class="sakai-table-noResultsMessage">
+				$tlang.getString("list.nosites")
+				#if ($!searchString && !$searchString.equals(""))
+					$tlang.getString("list.thatmatch") "$formattedText.escapeHtml($!searchString)"
+				#end
+				$tlang.getString("list.inthe") "$formattedText.escapeHtml($views.get($!viewSelected))".
+			</div>
+		</td></tr>
+	#end
+#end
+#if ($isFragment)
+<table id="siteList"><tbody>#siteListTableRows()</tbody></table>
+<div class="sakai-table-pagerContainer">#pagerPanel("pager1")</div>
+<div class="sakai-table-pagerContainer">#if ($sites.size() > 10 && $pagesizeInt > 10)#pagerPanel("pager2")#end</div>
+#else
 <script type="text/javascript">
 	$(document).ready(function(){
 		sakai.getSiteInfo('getSiteDesc','dialog','$tlang.getString("sitegen.siteinfolist.nosd")','$tlang.getString("sitegen.siteinfolist.nold")');
@@ -189,81 +270,9 @@
 						</tr>
 					</thead>
 					<tbody>
-						#set ($siteCount=0)
-						#foreach ($site in $sites)
-							#set ($siteCount=$siteCount + 1)
-							#set ($properties = $site.getProperties())
-
-							#if($site.SoftlyDeleted)
-								<tr class="siteListSoftlyDeleted">
-							#else
-								<tr>
-							#end
-								<td headers="checkbox" class="screenOnly attach">
-									#if ($service.allowUpdateSite($site.Id))
-										<input type="checkbox" name="selectedMembers" value="$formattedText.escapeHtml($site.getId())" id="site$siteCount" class="siteSelectCheckbox" />
-										<label class="skip" for="site$siteCount">Select $formattedText.escapeHtml($site.getTitle())</label>
-									#end
-								</td>
-								<td headers="title">
-									#if (!$service.allowAccessSite($site.Id))
-										<label class="unpublishedLabel">$formattedText.escapeHtml($site.getTitle())</label>
-									#else
-										<a href="$site.Url" target="_top">$formattedText.escapeHtml($site.getTitle())</a>
-									#end
-									<div id="dialog_$site.Id"></div>
-									<a href="#" id="$site.Id" class="getSiteDesc" title="$tlang.getString('list.moreinfotooltip')">
-										<img src="#imageLink("sakai/information_gray.png")" border="0" title="$tlang.getString('list.moreinfotooltip')" alt="$tlang.getString('list.moreinfotooltip')" />
-									</a>
-								</td>
-								#if($show_id_column)
-									<td headers="id" class="d-none d-sm-table-cell">
-										$formattedText.escapeHtml($site.getId())
-									</td>
-								#end
-								<td headers="type" class="d-none d-sm-table-cell">
-									#set($type="")
-									#set($type = $site.getType())
-									$!type
-								</td>
-								<td headers="createdBy" class="d-none d-sm-table-cell">
-									#if ($site.CreatedBy)
-										$formattedText.escapeHtml($site.CreatedBy.DisplayId)
-									#end
-								</td>
-								<td headers="term" class="d-none d-sm-table-cell">
-									#if($!courseSiteTypeStrings.contains($site.getType()))
-										#set($term = "")
-										#set($term = $properties.getProperty('term'))
-										$!term
-									#end
-								</td>
-								<td headers="published">
-									#if($site.isSoftlyDeleted())
-										$tlang.getString("list.softlydeleted")
-									#elseif($site.isPublished())
-										$tlang.getString("list.publi")
-									#else
-										$tlang.getString("list.unpub")
-									#end
-								</td>
-								<td headers="createdOn">
-									#if ($site.CreatedDate) $userTimeService.dateTimeFormat($site.CreatedDate, $tlang.Locale, 2) #end
-								</td>
-							</tr>
-						#end
+						#siteListTableRows()
 					</tbody>
 				</table>
-
-				#if ($sites.isEmpty())
-					<div class="sakai-table-noResultsMessage">
-						$tlang.getString("list.nosites")
-						#if ($!searchString && !$searchString.equals(""))
-							$tlang.getString("list.thatmatch") "$formattedText.escapeHtml($!searchString)"
-						#end
-						$tlang.getString("list.inthe") "$formattedText.escapeHtml($views.get($!viewSelected))".
-					</div>
-				#end
 			</div>
 		</form>
 
@@ -276,3 +285,4 @@
 		#end
 	</div>
 </div>
+#end
