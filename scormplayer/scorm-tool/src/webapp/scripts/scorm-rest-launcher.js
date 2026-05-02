@@ -434,9 +434,9 @@
                 payload.scoId = scoId;
             }
 
-            if (method === 'SetValue' && args.length >= 2 && scoId) {
+            if (method === 'SetValue' && args.length >= 2) {
                 const elem = args[0];
-                if (elem === 'cmi.score.scaled' || elem === 'cmi.completion_status' || elem === 'cmi.success_status') {
+                if (scoId && (elem === 'cmi.score.scaled' || elem === 'cmi.completion_status' || elem === 'cmi.success_status')) {
                     if (!state.perScoRuntimeValues[scoId]) {
                         state.perScoRuntimeValues[scoId] = {};
                     }
@@ -519,6 +519,26 @@
                 return false;
             }
 
+            // sendBeacon is the most reliable mechanism for sending data during page unload
+            // across all browsers and HTTPS environments. Include the CSRF token as a query
+            // parameter since sendBeacon cannot set custom headers.
+            if (typeof navigator.sendBeacon === 'function') {
+                try {
+                    const csrfToken = getCsrfToken();
+                    const beaconUrl = csrfToken
+                        ? `${request.url}?sakai_csrf_token=${encodeURIComponent(csrfToken)}`
+                        : request.url;
+                    const blob = new Blob([request.body], { type: 'application/json' });
+                    const sent = navigator.sendBeacon(beaconUrl, blob);
+                    if (sent) {
+                        return true;
+                    }
+                    console.warn('[SCORM REST] terminate beacon rejected by browser, falling back to fetch');
+                } catch (e) {
+                    console.warn('[SCORM REST] terminate beacon error, falling back to fetch', e);
+                }
+            }
+
             if (typeof fetch !== 'function') {
                 console.warn('[SCORM REST] terminate keepalive not supported (fetch unavailable)');
                 return false;
@@ -559,7 +579,6 @@
                     });
 
                 console.debug('[SCORM REST] terminate keepalive dispatched (fetch)');
-
                 return true;
             } catch (err) {
                 console.warn('[SCORM REST] terminate keepalive fetch error', err);
@@ -628,7 +647,6 @@
                 GetErrorString: (code) => runtimeCall('GetErrorString', [code]),
                 GetDiagnostic: (code) => runtimeCall('GetDiagnostic', [code]),
             };
-
             if (!window.API_1484_11) window.API_1484_11 = api;
             if (!window.APIAdapter) window.APIAdapter = api;
         }
@@ -656,6 +674,53 @@
         adjustFrameHeight();
         window.addEventListener('resize', adjustFrameHeight, { passive: true });
 
+        // pagehide fires reliably for popup window close in Firefox (unlike beforeunload).
+        // The HTML unload sequence runs popup pagehide BEFORE the iframe's beforeunload, so
+        // the SCO's own finishTracking() hasn't had a chance to run yet. We call it explicitly
+        // here so score/completion values flow into perScoRuntimeValues before we dispatch
+        // the fallback Terminate. If the SCO already called Terminate normally (e.g. the user
+        // clicked an in-content close button), activeScoId will already be null and we skip.
+        window.addEventListener('pagehide', function(event) {
+            if (event.persisted) { return; }
+
+            if (state.sessionId && state.activeScoId) {
+                // Attempt to invoke the SCO's unload handler so it submits final score/status
+                // before we send Terminate. Works for Xerte (window.onbeforeunload) and any
+                // SCO that registers its finalisation function the same way.
+                try {
+                    const iframeWin = frame && frame.contentWindow;
+                    if (iframeWin) {
+                        if (typeof iframeWin.finishTracking === 'function') {
+                            iframeWin.finishTracking();
+                        } else if (typeof iframeWin.onbeforeunload === 'function') {
+                            iframeWin.onbeforeunload();
+                        }
+                    }
+                } catch (_) {}
+
+                // If the SCO's Terminate call (inside finishTracking) already cleared
+                // activeScoId, it handled everything — no need for our fallback.
+                if (!state.activeScoId) {
+                    if (window.opener && !window.opener.closed) {
+                        window.opener.location.reload();
+                    }
+                    return;
+                }
+
+                const scoId = state.activeScoId;
+                const payload = { method: 'Terminate', arguments: [''], scoId };
+                const v = state.perScoRuntimeValues[scoId] || {};
+                if (v['cmi.score.scaled'] != null)     { payload.hintScoreScaled      = v['cmi.score.scaled']; }
+                if (v['cmi.completion_status'] != null) { payload.hintCompletionStatus = v['cmi.completion_status']; }
+                if (v['cmi.success_status'] != null)    { payload.hintSuccessStatus    = v['cmi.success_status']; }
+                dispatchTerminateRequest(createRuntimeRequest(payload), scoId);
+            }
+
+            if (window.opener && !window.opener.closed) {
+                window.opener.location.reload();
+            }
+        });
+
         launchers.push({ root, state, adjustFrameHeight });
     }
 
@@ -671,12 +736,4 @@
         bootstrap,
         active: launchers,
     };
-
-    // Refresh parent window when this popup closes (handles both normal exit and force-close)
-    // Using pagehide event with persisted check to avoid triggering on bfcache navigations
-    window.addEventListener('pagehide', function(event) {
-        if (!event.persisted && window.opener && !window.opener.closed) {
-            window.opener.location.reload();
-        }
-    });
 })();
