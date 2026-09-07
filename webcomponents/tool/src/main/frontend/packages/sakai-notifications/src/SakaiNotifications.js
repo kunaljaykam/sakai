@@ -83,8 +83,7 @@ export class SakaiNotifications extends SakaiElement {
 
   firstUpdated() {
 
-    // Load on mount so the push subscription is created before the bell is ever opened.
-    this.loadNotifications();
+    this._registerForNotifications();
   }
 
   loadNotifications() {
