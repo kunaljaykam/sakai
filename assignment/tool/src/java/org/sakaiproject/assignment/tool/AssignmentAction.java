@@ -11307,11 +11307,7 @@ public class AssignmentAction extends PagedResourceActionII {
 
         assignmentService.publishAssignment(assignment);
 
-        if (assignment.getAllowPeerAssessment()) {
-            assignmentPeerAssessmentService.schedulePeerReview(assignment.getId());
-        } else {
-            assignmentPeerAssessmentService.removeScheduledPeerReview(assignment.getId());
-        }
+        assignmentPeerAssessmentService.schedulePeerReview(assignment.getId());
 
         if (addToResolvedGradebookOnPublish) {
             integrateAssignmentWithGradebook(state, assignment.getTitle(), oAssociateGradebookAssignment, assignment,
