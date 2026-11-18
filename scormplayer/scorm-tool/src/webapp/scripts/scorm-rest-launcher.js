@@ -46,6 +46,11 @@
             pendingScoId: null,
             runtimeInstalled: false,
             perScoRuntimeValues: {},
+            pageDismissing: false,
+            pageHidden: false,
+            unloadQueue: [],
+            unloadFlushScheduled: false,
+            runtimeCache: {},
         };
 
         root.dataset.initialized = 'true';
@@ -397,6 +402,10 @@
             try {
                 xhr.send(request.body);
             } catch (err) {
+                if (isBlockedByPageDismissal(err)) {
+                    console.debug(`[SCORM REST] synchronous runtime request blocked during page dismissal (${request.payload.method})`);
+                    return { aborted: false, blocked: true, data: null, request };
+                }
                 console.error('[SCORM REST] runtime network exception (XHR)', err);
                 showMessage('Unable to reach SCORM service.');
                 return null;
@@ -452,6 +461,15 @@
                 delete state.perScoRuntimeValues[scoId];
             }
 
+            if (method === 'Initialize') {
+                state.runtimeCache[cacheKey(scoId)] = {};
+            }
+
+            // Once the SCO's unload calls are being queued, keep queueing so the server sees them in order.
+            if (state.unloadQueue.length > 0 || (method === 'Terminate' && state.pageDismissing)) {
+                return answerDuringDismissal(method, args, payload, scoId);
+            }
+
             const request = createRuntimeRequest(payload);
             console.debug('[SCORM REST] runtime request', payload);
 
@@ -470,7 +488,7 @@
                     return 'true';
                 }
 
-                if (fallback.aborted) {
+                if (fallback.aborted || fallback.blocked) {
                     console.warn('[SCORM REST] runtime terminate sync aborted; attempting keepalive');
                     const keepalive = dispatchTerminateKeepalive(request, scoId);
                     markTerminateComplete(scoId, { refreshAfter: keepalive ? 750 : 1200 });
@@ -487,14 +505,36 @@
                 return 'false';
             }
 
+            if (result.blocked) {
+                return answerDuringDismissal(method, args, payload, scoId);
+            }
+
             if (result.aborted) {
                 showMessage('SCORM service did not respond. Please check your connection.');
                 return 'false';
             }
 
             const response = result.data || {};
+            rememberRuntimeValue(method, args, response, scoId);
             processRuntimeResponse(method, response, scoId);
             return typeof response.value === 'string' ? response.value : '';
+        }
+
+        function cacheKey(scoId) {
+            return scoId || '';
+        }
+
+        // Keeps the values the server has confirmed, so reads made while the page is closing
+        // (when no request can be answered) still return what the SCO stored.
+        function rememberRuntimeValue(method, args, response, scoId) {
+            const key = cacheKey(scoId);
+            const cache = state.runtimeCache[key] || (state.runtimeCache[key] = {});
+            const ok = response.errorCode == null || String(response.errorCode) === '0';
+            if (method === 'GetValue' && ok && typeof response.value === 'string') {
+                cache[args[0]] = response.value;
+            } else if (method === 'SetValue' && response.value === 'true') {
+                cache[args[0]] = String(args[1]);
+            }
         }
 
 
@@ -503,6 +543,118 @@
                 return state.pendingScoId || state.currentScoId || state.activeScoId || null;
             }
             return state.activeScoId || state.currentScoId || null;
+        }
+
+        // Browsers refuse synchronous XHR while the page is being dismissed (Chrome reports
+        // "Synchronous XHR in page dismissal"). SCOs commonly call SetValue/Commit from their
+        // beforeunload/unload handlers, so recognise that case instead of treating it as a network failure.
+        function isBlockedByPageDismissal(err) {
+            return state.pageDismissing || /dismissal/i.test((err && err.message) || '');
+        }
+
+        // Answers a runtime call made while the page is being dismissed, when no request can be
+        // answered. Calls that change learner data are queued and delivered to the server in order,
+        // as one keepalive request (see flushUnloadQueue); reads are answered from confirmed values.
+        function answerDuringDismissal(method, args, payload, scoId) {
+            switch (method) {
+                case 'SetValue':
+                    state.unloadQueue.push(payload);
+                    (state.runtimeCache[cacheKey(scoId)] || (state.runtimeCache[cacheKey(scoId)] = {}))[args[0]] = String(args[1]);
+                    scheduleUnloadFlush();
+                    return 'true';
+                case 'Commit':
+                    state.unloadQueue.push(payload);
+                    scheduleUnloadFlush();
+                    return 'true';
+                case 'Terminate':
+                    state.unloadQueue.push(payload);
+                    flushUnloadQueue();
+                    markTerminateComplete(scoId);
+                    return 'true';
+                case 'GetValue': {
+                    const cache = state.runtimeCache[cacheKey(scoId)] || {};
+                    return Object.prototype.hasOwnProperty.call(cache, args[0]) ? cache[args[0]] : '';
+                }
+                case 'GetLastError':
+                    return '0';
+                case 'Initialize':
+                    return 'false';
+                default:
+                    return '';
+            }
+        }
+
+        // Calls made in one unload handler are sent together once the handler returns
+        // (microtasks run after each event listener), or immediately on Terminate.
+        function scheduleUnloadFlush() {
+            if (state.unloadFlushScheduled) {
+                return;
+            }
+            state.unloadFlushScheduled = true;
+            queueMicrotask(flushUnloadQueue);
+        }
+
+        function flushUnloadQueue() {
+            state.unloadFlushScheduled = false;
+            if (state.unloadQueue.length === 0) {
+                return;
+            }
+
+            const calls = state.unloadQueue.splice(0);
+            const sent = sendKeepalive({
+                url: apiUrl(`/sessions/${state.sessionId}/runtime/batch`),
+                headers: buildRuntimeHeaders(),
+                body: JSON.stringify(calls),
+            });
+            const methods = calls.map((call) => call.method).join(', ');
+            if (!sent) {
+                console.warn(`[SCORM REST] could not deliver runtime calls during page dismissal (${methods}); data may be lost`);
+                return;
+            }
+            console.debug(`[SCORM REST] runtime calls sent as one batch during page dismissal (${methods})`);
+
+            sent
+                .then(async (response) => {
+                    const text = await response.text().catch(() => '');
+                    const data = text ? safeParse(text) : null;
+                    if (!response.ok || !Array.isArray(data)) {
+                        console.warn('[SCORM REST] runtime batch response not OK', response.status);
+                        return;
+                    }
+                    // Only reached if the page survived (e.g. the learner cancelled leaving).
+                    calls.forEach((call, i) => {
+                        if (call.method === 'Terminate' && data[i]) {
+                            processRuntimeResponse('Terminate', data[i], call.scoId || null);
+                        }
+                    });
+                })
+                .catch((err) => console.warn('[SCORM REST] runtime batch rejected', err));
+        }
+
+        // Sends the request with fetch keepalive so it survives page dismissal. Returns the fetch
+        // promise, or null when keepalive cannot be used.
+        function sendKeepalive(request) {
+            if (!request || typeof fetch !== 'function') {
+                return null;
+            }
+            try {
+                const headers = new Headers();
+                Object.entries(request.headers).forEach(([name, value]) => {
+                    if (typeof value === 'string') {
+                        headers.append(name, value);
+                    }
+                });
+                return fetch(request.url, {
+                    method: 'POST',
+                    headers,
+                    credentials: 'same-origin',
+                    body: request.body,
+                    keepalive: true,
+                });
+            } catch (err) {
+                console.warn('[SCORM REST] keepalive dispatch failed', err);
+                return null;
+            }
         }
 
         function dispatchTerminateKeepalive(request, scoId) {
@@ -519,52 +671,35 @@
                 return false;
             }
 
-            if (typeof fetch !== 'function') {
-                console.warn('[SCORM REST] terminate keepalive not supported (fetch unavailable)');
+            const sent = sendKeepalive(request);
+            if (!sent) {
+                console.warn('[SCORM REST] terminate keepalive not available');
                 return false;
             }
 
-            try {
-                const headers = new Headers();
-                Object.entries(request.headers).forEach(([name, value]) => {
-                    if (typeof value === 'string') {
-                        headers.append(name, value);
+            sent
+                .then(async (response) => {
+                    const text = await response.text().catch(() => '');
+                    const data = text ? safeParse(text) : {};
+                    if (!response.ok || data === null) {
+                        console.warn('[SCORM REST] terminate keepalive response not OK', response.status);
+                        afterRuntimeCall('Terminate', { value: 'true' }, scoId, { refreshAfter: 750 });
+                        return;
                     }
+                    processRuntimeResponse('Terminate', data || {}, scoId);
+                })
+                .catch((err) => {
+                    console.warn('[SCORM REST] terminate keepalive rejected', err);
+                    window.setTimeout(() => {
+                        if (ensureSession()) {
+                            refreshSessionState();
+                        }
+                    }, 750);
                 });
 
-                fetch(request.url, {
-                    method: 'POST',
-                    headers,
-                    credentials: 'same-origin',
-                    body: request.body,
-                    keepalive: true,
-                })
-                    .then(async (response) => {
-                        const text = await response.text().catch(() => '');
-                        const data = text ? safeParse(text) : {};
-                        if (!response.ok || data === null) {
-                            console.warn('[SCORM REST] terminate keepalive response not OK', response.status);
-                            afterRuntimeCall('Terminate', { value: 'true' }, scoId, { refreshAfter: 750 });
-                            return;
-                        }
-                        processRuntimeResponse('Terminate', data || {}, scoId);
-                    })
-                    .catch((err) => {
-                        console.warn('[SCORM REST] terminate keepalive rejected', err);
-                        window.setTimeout(() => {
-                            if (ensureSession()) {
-                                refreshSessionState();
-                            }
-                        }, 750);
-                    });
+            console.debug('[SCORM REST] terminate keepalive dispatched (fetch)');
 
-                console.debug('[SCORM REST] terminate keepalive dispatched (fetch)');
-
-                return true;
-            } catch (err) {
-                console.warn('[SCORM REST] terminate keepalive fetch error', err);
-                return false;
-            }
+            return true;
         }
 
         function processRuntimeResponse(method, response, scoId) {
@@ -656,9 +791,26 @@
         adjustFrameHeight();
         window.addEventListener('resize', adjustFrameHeight, { passive: true });
 
+        window.addEventListener('beforeunload', () => {
+            state.pageDismissing = true;
+            // beforeunload can be cancelled (the learner stays on a "Leave site?" prompt). If the page
+            // has not been hidden by the time the event loop moves on, it is not being dismissed.
+            window.setTimeout(() => {
+                if (!state.pageHidden) {
+                    state.pageDismissing = false;
+                }
+            }, 0);
+        });
+        window.addEventListener('pageshow', () => {
+            state.pageHidden = false;
+            state.pageDismissing = false;
+        });
+
         // Firefox suppresses beforeunload on non-localhost popup close, so invoke the SCO's
         // unload handler explicitly to ensure score/completion are submitted before the window goes.
         window.addEventListener('pagehide', function(event) {
+            state.pageHidden = true;
+            state.pageDismissing = true;
             if (event.persisted) return;
             if (state.sessionId && state.activeScoId) {
                 const iframeWin = frame?.contentWindow;

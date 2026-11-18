@@ -18,7 +18,11 @@ package org.sakaiproject.webapi.controllers.test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
@@ -29,7 +33,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.adl.sequencer.IValidRequests;
 
@@ -133,6 +140,73 @@ public class ScormControllerTest extends BaseControllerTests {
 
         ScormRuntimeInvocation captured = invocationCaptor.getValue();
         assertEquals("sco-1", captured.getScoId());
+    }
+
+    @Test
+    public void runtimeBatchRunsCallsInOrder() throws Exception {
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ScormRuntimeInvocation>> invocationsCaptor = ArgumentCaptor.forClass(List.class);
+
+        when(scormLaunchService.runtimeBatch(eq("session-123"), invocationsCaptor.capture())).thenReturn(List.of(
+            ScormRuntimeResult.builder().value("true").errorCode("0").sessionEnded(false).build(),
+            ScormRuntimeResult.builder().value("true").errorCode("0").sessionEnded(false).build(),
+            ScormRuntimeResult.builder().value("true").errorCode("0").sessionEnded(true).build()));
+
+        mockMvc.perform(post("/scorm/sessions/session-123/runtime/batch")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("[{\"method\":\"SetValue\",\"arguments\":[\"cmi.session_time\",\"PT4.5S\"],\"scoId\":\"sco-1\"},"
+                    + "{\"method\":\"SetValue\",\"arguments\":[\"cmi.exit\",\"suspend\"],\"scoId\":\"sco-1\"},"
+                    + "{\"method\":\"Terminate\",\"arguments\":[\"\"],\"scoId\":\"sco-1\",\"hintCompletionStatus\":\"incomplete\"}]"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0].value").value("true"))
+            .andExpect(jsonPath("$[2].sessionEnded").value(true))
+            .andDo(document("runtime-batch"));
+
+        List<ScormRuntimeInvocation> captured = invocationsCaptor.getValue();
+        assertEquals(List.of("SetValue", "SetValue", "Terminate"),
+            captured.stream().map(ScormRuntimeInvocation::getMethod).collect(Collectors.toList()));
+        assertEquals(List.of("cmi.exit", "suspend"), captured.get(1).getArguments());
+        assertEquals("sco-1", captured.get(2).getScoId());
+        assertEquals("incomplete", captured.get(2).getHintCompletionStatus());
+    }
+
+    @Test
+    public void runtimeBatchRejectsEmptyBatch() throws Exception {
+
+        mockMvc.perform(post("/scorm/sessions/session-123/runtime/batch")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("[]"))
+            .andExpect(status().isBadRequest());
+
+        verify(scormLaunchService, never()).runtimeBatch(anyString(), anyList());
+    }
+
+    @Test
+    public void runtimeBatchRejectsOversizedBatch() throws Exception {
+
+        String calls = IntStream.range(0, 101)
+            .mapToObj(i -> "{\"method\":\"GetValue\",\"arguments\":[\"cmi.location\"]}")
+            .collect(Collectors.joining(",", "[", "]"));
+
+        mockMvc.perform(post("/scorm/sessions/session-123/runtime/batch")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(calls))
+            .andExpect(status().isBadRequest());
+
+        verify(scormLaunchService, never()).runtimeBatch(anyString(), anyList());
+    }
+
+    @Test
+    public void runtimeBatchRejectsCallWithoutMethod() throws Exception {
+
+        mockMvc.perform(post("/scorm/sessions/session-123/runtime/batch")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("[{\"method\":\"SetValue\",\"arguments\":[\"cmi.exit\",\"suspend\"]},{\"arguments\":[\"\"]}]"))
+            .andExpect(status().isBadRequest());
+
+        verify(scormLaunchService, never()).runtimeBatch(anyString(), anyList());
     }
 
     @Test

@@ -15,6 +15,7 @@
  */
 package org.sakaiproject.scorm.service.api;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.sakaiproject.scorm.service.api.launch.ScormLaunchContext;
@@ -72,6 +73,20 @@ public interface ScormLaunchService
      * @return runtime response including return value and error metadata
      */
     ScormRuntimeResult runtime(String sessionId, ScormRuntimeInvocation invocation);
+
+    /**
+     * Invoke several SCORM 2004 runtime API calls in the order given, holding the session lock for the
+     * whole batch so no other request for the session can run in between.
+     *
+     * <p>Browsers block synchronous requests while a page is being dismissed, so the launcher queues the
+     * calls a SCO makes from its unload handlers (typically SetValue, Commit and Terminate) and delivers
+     * them in a single keepalive request. Processing them as one ordered unit keeps their SCORM semantics.
+     *
+     * @param sessionId the launch session identifier
+     * @param invocations runtime invocations in the order the SCO made them
+     * @return one result per invocation, in the same order
+     */
+    List<ScormRuntimeResult> runtimeBatch(String sessionId, List<ScormRuntimeInvocation> invocations);
 
     /**
      * Terminate and discard a launch session.

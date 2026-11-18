@@ -268,6 +268,27 @@ public class ScormLaunchServiceImpl implements ScormLaunchService
 		}
 	}
 
+	@Override
+	public List<ScormRuntimeResult> runtimeBatch(String sessionId, List<ScormRuntimeInvocation> invocations)
+	{
+		ReentrantLock lock = requireSessionLock(sessionId);
+		lock.lock();
+		try
+		{
+			List<ScormRuntimeResult> results = new ArrayList<>(invocations.size());
+			for (ScormRuntimeInvocation invocation : invocations)
+			{
+				// runtime() takes the same reentrant lock, so the batch stays one uninterrupted unit
+				results.add(runtime(sessionId, invocation));
+			}
+			return results;
+		}
+		finally
+		{
+			lock.unlock();
+		}
+	}
+
     // Applies score/completion hints embedded in the Terminate payload (Xerte workaround for
     // browsers blocking synchronous XHR during beforeunload). Only terminal states are written.
     private void applyScoreHints(ScormRuntimeInvocation invocation, SessionBean sessionBean, ScoBean scoBean)

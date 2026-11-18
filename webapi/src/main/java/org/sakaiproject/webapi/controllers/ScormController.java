@@ -55,6 +55,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @RequestMapping(path = "/scorm", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ScormController extends AbstractSakaiApiController {
 
+    // A SCO's unload handlers make a handful of calls; this only bounds abusive requests.
+    private static final int MAX_RUNTIME_BATCH_SIZE = 100;
+
     @Autowired
     private ScormLaunchService scormLaunchService;
 
@@ -110,24 +113,57 @@ public class ScormController extends AbstractSakaiApiController {
 
         checkSakaiSession();
 
-        if (StringUtils.isBlank(payload.getMethod())) {
+        ScormRuntimeInvocation invocation = toInvocation(payload);
+
+        try {
+            return toResponse(scormLaunchService.runtime(sessionId, invocation));
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Runs runtime calls in order as one unit. The launcher uses this while the page is being dismissed,
+     * when browsers refuse synchronous requests, to deliver the SCO's final calls in a single keepalive request.
+     */
+    @PostMapping(path = "/sessions/{sessionId}/runtime/batch", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public List<ScormRuntimeResponse> runtimeBatch(@PathVariable("sessionId") String sessionId, @RequestBody List<ScormRuntimePayload> payloads) {
+
+        checkSakaiSession();
+
+        if (payloads == null || payloads.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one runtime call is required");
+        }
+        if (payloads.size() > MAX_RUNTIME_BATCH_SIZE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A runtime batch may contain at most " + MAX_RUNTIME_BATCH_SIZE + " calls");
+        }
+
+        List<ScormRuntimeInvocation> invocations = payloads.stream().map(this::toInvocation).toList();
+
+        try {
+            return scormLaunchService.runtimeBatch(sessionId, invocations).stream().map(this::toResponse).toList();
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    private ScormRuntimeInvocation toInvocation(ScormRuntimePayload payload) {
+
+        if (payload == null || StringUtils.isBlank(payload.getMethod())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Runtime method is required");
         }
 
-        ScormRuntimeInvocation invocation = new ScormRuntimeInvocation(
+        return new ScormRuntimeInvocation(
             payload.getMethod(),
             Optional.ofNullable(payload.getArguments()).orElse(List.of()),
             payload.getScoId(),
             payload.getHintScoreScaled(),
             payload.getHintCompletionStatus(),
             payload.getHintSuccessStatus());
+    }
 
-        try {
-            ScormRuntimeResult result = scormLaunchService.runtime(sessionId, invocation);
-            return new ScormRuntimeResponse(result.getValue(), result.getErrorCode(), result.getDiagnostic(), result.getLaunchPath(), result.isSessionEnded());
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
-        }
+    private ScormRuntimeResponse toResponse(ScormRuntimeResult result) {
+        return new ScormRuntimeResponse(result.getValue(), result.getErrorCode(), result.getDiagnostic(), result.getLaunchPath(), result.isSessionEnded());
     }
 
     @DeleteMapping(path = "/sessions/{sessionId}")
