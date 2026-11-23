@@ -170,6 +170,13 @@ public interface EventTrackingService
 	void addPriorityObserver(Observer observer);
 
 	/**
+	 * Observe events generated on this server before regular and local observers.
+	 *
+	 * @param observer the observer to register
+	 */
+	void addLocalPriorityObserver(Observer observer);
+
+	/**
 	 * Add an observer of events. The observer will be notified whenever there are new events. Local observers get notified only of event generated on this application server, not on those generated elsewhere.
 	 * 
 	 * @param observer
