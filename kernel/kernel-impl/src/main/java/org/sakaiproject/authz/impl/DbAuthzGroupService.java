@@ -237,8 +237,8 @@ public class DbAuthzGroupService extends BaseAuthzGroupService implements Observ
 
 		try
 		{
-			// Clear the shared Ignite caches on the posting node before observers read realm membership.
-			eventTrackingService.addLocalPriorityObserver(this);
+			// Clear realm caches before the role-group watcher reads membership.
+			eventTrackingService.addPriorityObserver(this);
 
 			// if we are auto-creating our schema, check and create
 			if (m_autoDdl)

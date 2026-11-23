@@ -86,7 +86,6 @@ import org.sakaiproject.user.api.User;
 public abstract class BaseEventTrackingService implements EventTrackingService {
 	protected MyObservable m_observableHelper = new MyObservable(); // An observable object helper
 	protected MyObservable m_priorityObservableHelper = new MyObservable(); // An observable object helper for see-it-first priority observers
-	private final MyObservable localPriorityObservers = new MyObservable();
 	protected MyObservable m_localObservableHelper = new MyObservable(); // An observable object helper for see-only-local-events observers
 	protected EventDelayHandler delayHandler;
 
@@ -128,12 +127,6 @@ public abstract class BaseEventTrackingService implements EventTrackingService {
 		// first, notify all priority observers
 		m_priorityObservableHelper.setChanged();
 		m_priorityObservableHelper.notifyObservers(event);
-
-		if (local)
-		{
-			localPriorityObservers.setChanged();
-			localPriorityObservers.notifyObservers(event);
-		}
 
 		// notify the normal observers
 		m_observableHelper.setChanged();
@@ -426,7 +419,6 @@ public abstract class BaseEventTrackingService implements EventTrackingService {
 	public void addObserver(Observer observer)
 	{
 		// keep this observer in one list only
-		localPriorityObservers.deleteObserver(observer);
 		m_priorityObservableHelper.deleteObserver(observer);
 		m_localObservableHelper.deleteObserver(observer);
 
@@ -442,21 +434,10 @@ public abstract class BaseEventTrackingService implements EventTrackingService {
 	public void addPriorityObserver(Observer observer)
 	{
 		// keep this observer in one list only
-		localPriorityObservers.deleteObserver(observer);
 		m_observableHelper.deleteObserver(observer);
 		m_localObservableHelper.deleteObserver(observer);
 
 		m_priorityObservableHelper.addObserver(observer);
-	}
-
-	@Override
-	public void addLocalPriorityObserver(Observer observer)
-	{
-		m_observableHelper.deleteObserver(observer);
-		m_priorityObservableHelper.deleteObserver(observer);
-		m_localObservableHelper.deleteObserver(observer);
-
-		localPriorityObservers.addObserver(observer);
 	}
 
 	/**
@@ -468,7 +449,6 @@ public abstract class BaseEventTrackingService implements EventTrackingService {
 	public void addLocalObserver(Observer observer)
 	{
 		// keep this observer in one list only
-		localPriorityObservers.deleteObserver(observer);
 		m_observableHelper.deleteObserver(observer);
 		m_priorityObservableHelper.deleteObserver(observer);
 
@@ -483,7 +463,6 @@ public abstract class BaseEventTrackingService implements EventTrackingService {
 	 */
 	public void deleteObserver(Observer observer)
 	{
-		localPriorityObservers.deleteObserver(observer);
 		m_observableHelper.deleteObserver(observer);
 		m_priorityObservableHelper.deleteObserver(observer);
 		m_localObservableHelper.deleteObserver(observer);
